@@ -2,10 +2,10 @@ package org.quickstart;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.similarity.LevenshteinDistance;
+import org.quickstart.exceptions.LambdaExceptionHandler;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class ComposeBuilder {
@@ -14,6 +14,8 @@ public class ComposeBuilder {
      * Maps service names found in the input to their corresponding JSON nodes.
      */
     private final Map<String, JsonNode> presentServices;
+    private final Map<String, Object> serviceVolumes;
+
     /**
      * Maps an unfound service name to what the user potentially meant (a similar service name).
      */
@@ -22,6 +24,7 @@ public class ComposeBuilder {
     private final static int MAX_SERVICE_SIMILARITY_COUNT = 3;
 
     private ComposeBuilder() {
+        this.serviceVolumes = new HashMap<>();
         this.absentServices = new HashMap<>();
         this.presentServices = new HashMap<>();
     }
@@ -43,7 +46,7 @@ public class ComposeBuilder {
      * @return The current ComposeBuilder instance.
      * @throws IOException If an I/O error occurs (though not explicitly thrown by this method's body, kept for signature).
      */
-    public ComposeBuilder build(JsonNode rootNode, Set<String> expectedServices) throws IOException {
+    public ComposeBuilder buildServices(JsonNode rootNode, Set<String> expectedServices) throws IOException {
         if (rootNode.isEmpty()) {
             return null;
         }
@@ -53,11 +56,47 @@ public class ComposeBuilder {
                 absentServices.put(service, "");
             }else{
                 presentServices.put(service, rootNode.get(service));
+                buildVolumes(service);
             }
         }
 
         return this;
     }
+
+
+    /**
+     * Ensure services with volumes are properly mapped in the yaml file, so they can be mounted when the user runs them
+     * @param service The name of the service
+     * */
+    private void buildVolumes(String service) {
+        JsonNode serviceNode = presentServices.get(service);
+        if (serviceNode == null || serviceNode.isEmpty()) {
+            return;
+        }
+
+        JsonNode volumeNode = serviceNode.get("volumes");
+        if (volumeNode == null || volumeNode.isEmpty()) {
+            return;
+        }
+
+
+        volumeNode.forEach(
+                LambdaExceptionHandler.handle(node -> {
+                    String volumeName = node.asText();
+
+                    int firstColonIndex = volumeName.indexOf(':');
+                    volumeName = volumeName.substring(0, firstColonIndex);
+
+                    if(isBindMount(volumeName)){
+                        return;
+                    }
+
+                    serviceVolumes.put(volumeName, null);
+                }, null) //TODO Throw an actual service error here
+        );
+
+    }
+
 
     /**
      * Adds services from a registry and deletes a specified set of services.
@@ -91,6 +130,7 @@ public class ComposeBuilder {
         for (String absentService : absentServices.keySet()) {
             StringBuilder similarServices = new StringBuilder();
             int count = 0;
+
             for(String service : registryServices) {
                 dist = levenshteinDistance.apply(service, absentService);
 
@@ -109,6 +149,11 @@ public class ComposeBuilder {
         return this;
     }
 
+    //Helper method to check if a volume should be mounted
+    private boolean isBindMount(String volume) {
+        return volume.contains("\\") || volume.contains("/");
+    }
+
 
     /**
      * Generates a detailed string report of all absent services and their potential matches.
@@ -116,21 +161,35 @@ public class ComposeBuilder {
      * @return A string detailing absent services.
      */
     public String absentServicesToString(){
-        StringBuilder sb = new StringBuilder();
-        List<String> list  = new ArrayList<>(); //List to store keys where we couldn't find similar keys for them in the reg
-        absentServices.forEach((key, value) -> {
-            if(value.isEmpty()){
-                list.add(key);
-            }
-            sb.append(key).append(" -> ").append(value).append(" \n");
-        });
-
-        if(!list.isEmpty()){
-            sb.append("We couldn't find similar matches for these keys in the registry: ");
-            list.forEach(s -> sb.append(s.trim()).append("\n"));
+        if(absentServices.isEmpty()) {
+            return "";
         }
 
-        return sb.toString();
+        StringBuilder sb = new StringBuilder();
+        List<String> withSuggestions = new ArrayList<>();
+        List<String> noMatches = new ArrayList<>();
+
+        absentServices.forEach((key, value) -> {
+            if(value.isEmpty()){
+                noMatches.add(key);
+            } else {
+                withSuggestions.add(key + " (did you mean: " + value.trim() + "?)");
+            }
+        });
+
+        if(!withSuggestions.isEmpty()) {
+            sb.append("service not found: ");
+            sb.append(String.join(", ", withSuggestions));
+            sb.append("\n");
+        }
+
+        if(!noMatches.isEmpty()) {
+            sb.append("service not found: ");
+            sb.append(String.join(", ", noMatches));
+            sb.append("\n");
+        }
+
+        return sb.toString().trim();
     }
 
     /**
@@ -140,6 +199,15 @@ public class ComposeBuilder {
      */
     public Map<String, JsonNode> presentServices() {
         return presentServices;
+    }
+
+    /**
+     * Returns the map of service's volumes.
+     *
+     * @return A map of each service's volumes.
+     */
+    public Map<String, Object> serviceVolumes() {
+        return serviceVolumes;
     }
 
     /**

@@ -9,12 +9,13 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import org.quickstart.ComposeBuilder;
+import org.quickstart.configurations.ObjectMapperConfig;
 import org.quickstart.dtos.RegistryExport;
 import org.quickstart.dtos.RegistryImport;
+import org.quickstart.dtos.ServiceExport;
 import org.quickstart.exceptions.QuickStartException;
 import org.quickstart.exceptions.RegistryException;
 import org.quickstart.exceptions.ServiceError;
-import org.yaml.snakeyaml.DumperOptions;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,9 +35,8 @@ public class RegistryHandler {
     private final JsonNode registryRootNode;
     
     private RegistryHandler(){
-        this.jsonMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
-                .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature(), true);
-        this.yamlMapper = new YAMLMapper(configureYamlFactory());
+        this.jsonMapper = ObjectMapperConfig.getJsonMapper();
+        this.yamlMapper = ObjectMapperConfig.getYAMLMapper();
         this.registryRootNode = rootNode();
         if(!Files.exists(REGISTRY_PATH)){
             RegistryInitializer.initRegistryFile();
@@ -51,7 +51,7 @@ public class RegistryHandler {
      * @param map {@link HashMap} Maps each service name to their config
      * @return a dto containing a list of services included by the user already existing in the registry
      * */
-    // I personally won't suggest using this method but its here for convenience for the wackos who will paste their
+    // I personally won't suggest using this method, it's here for convenience for the wackos who will paste their
     // yaml config into the CLI
     public RegistryImport importToRegistryFromText(Map<String, String> map) throws RegistryException{
         if(map == null || map.isEmpty()) {
@@ -93,7 +93,7 @@ public class RegistryHandler {
     //My suggested method
     public RegistryImport importToRegistryFromYaml(String path) throws RegistryException{
         Path userPath = Paths.get(path);
-        validateYamlFile(userPath);
+        validateFile(userPath);
 
         try{
             JsonNode rootNode = yamlMapper.readTree(userPath.toFile());
@@ -141,7 +141,8 @@ public class RegistryHandler {
 
     /**
      * Export services from the registry as text
-     * @param services The list of services given by the user
+     * @param services The list of services given by the use
+     * @return an export class containing a yaml string of all the services found, and a string of those not found in the registry
      * */
     public RegistryExport exportFromRegistryAsText(Set<String> services) throws RegistryException{
         if(services == null || services.isEmpty()){
@@ -153,7 +154,20 @@ public class RegistryHandler {
         @SuppressWarnings("unchecked")
         Map<String, JsonNode> registryServices = jsonMapper.convertValue(registryRootNode, Map.class);
 
-        return readFromRegistry(registryRootNode, registryServices  ,services);
+        ServiceExport export =
+                readFromRegistry(registryRootNode, registryServices  ,services);
+
+        Map<String, Object> serviceMap = export.composeMap(); //Get the service map
+        System.out.println("DEBUG serviceMap: " + serviceMap);
+        System.out.println("DEBUG volumes: " + serviceMap.get("volumes"));
+
+        try{
+            String yamlString = yamlMapper.writeValueAsString(serviceMap);
+            return new RegistryExport(yamlString, export.absentServices());
+        }catch(JsonProcessingException e){
+            throw new RegistryException("");
+        }
+
     }
 
 
@@ -161,14 +175,13 @@ public class RegistryHandler {
      * Export services from the registry to a yaml file
      * @param services The set of services given by the user
      * @param userPath The path provided by the user
+     * @return an export class containing a yaml string of all the services found, and a string of those not found in the registry
      * */
     public RegistryExport exportFromRegistryToYaml(Set<String> services, Path userPath) throws RegistryException{
-        validateYamlFile(userPath);
-
+        validateFile(userPath);
         RegistryExport registryExport = exportFromRegistryAsText(services);
         try{
-            String yamlString = yamlMapper.writeValueAsString(registryExport.composeMap());
-            Files.writeString(userPath, yamlString , StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            Files.write(userPath, registryExport.yamlString().getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
             return registryExport;
         }catch(IOException e){
             throw new RegistryException(
@@ -183,9 +196,9 @@ public class RegistryHandler {
     /**
      * Deletes a set of services from the registry
      * @param servicesToDelete The set of services to delete
-     * @return {@link RegistryExport} A dto which contains a map of the
+     * @return {@link ServiceExport} A dto which contains a map of the
      * */
-    public RegistryExport deleteServicesFromRegistry(Set<String> servicesToDelete) throws RegistryException{
+    public ServiceExport deleteServicesFromRegistry(Set<String> servicesToDelete) throws RegistryException{
         if(servicesToDelete == null || servicesToDelete.isEmpty()){
             throw new RegistryException("Given list of services is empty.");
         }
@@ -208,7 +221,7 @@ public class RegistryHandler {
 
             //We don't need to return a map of what was written to the json node,
             // but we need to return absent services (services not found) as a string
-            return new RegistryExport(null, builder.absentServicesToString());
+            return new ServiceExport(null, builder.absentServicesToString());
         }catch (IOException e){
             throw new RegistryException(String.format("Failed to write registry to file %s.", registryMap));
         }
@@ -262,25 +275,9 @@ public class RegistryHandler {
     }
 
 
-    private YAMLFactory configureYamlFactory(){
-        DumperOptions dumperOptions = new DumperOptions();
-        dumperOptions.setProcessComments(true);
-        dumperOptions.setDefaultScalarStyle(DumperOptions.ScalarStyle.SINGLE_QUOTED); //Ensure yaml always default to single quotes
 
-        return YAMLFactory.builder()
-                .configure(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR, true) //Ensure arrays are always indented
-                .disable(YAMLGenerator.Feature.MINIMIZE_QUOTES) //Ensure values are always quoted
-                .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER) // Idk what this does honestly
-                .disable(YAMLGenerator.Feature.USE_NATIVE_TYPE_ID) //This too
-                .dumperOptions(dumperOptions)
-                .build();
-    }
 
-    private void validateYamlFile(Path userPath) throws RegistryException{
-//        if(!userPath.toString().endsWith("yaml") || !userPath.toString().endsWith("yml")){
-//            throw new RegistryException("Can only import from YAML file");
-//        }
-
+    private void validateFile(Path userPath) throws RegistryException{
         if(!Files.exists(userPath)){
             throw new RegistryException(
                     new ServiceError(

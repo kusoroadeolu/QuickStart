@@ -1,0 +1,10 @@
+{
+  "exclude": [""],
+  "commit-mode": "summary",
+  "gemini-token": "AIzaSyB47KZfsCMaOelwmQH6rbfoaxzfaWbLAkg",
+  "pat-token": "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",
+  "person-ident": {
+    "name" : "Kusoro Adeolu",
+    "email": "kusoroadeolu@gmail.com"
+  }
+}

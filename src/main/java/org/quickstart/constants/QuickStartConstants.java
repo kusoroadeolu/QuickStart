@@ -11,5 +11,6 @@ public class QuickStartConstants {
     public static final Path REGISTRY_PATH = Path.of(USER_HOME, ".quickstart", "registry.json").normalize();
     public static final Path PROFILE_BASE_PATH   = Path.of(USER_HOME, ".quickstart", "profile").normalize();
     public static final Path TEMP_BASE_PATH   = Path.of(USER_HOME, ".quickstart", "temp").normalize();
-    public static final String COMPOSE_VERSION = "3.8";
+    public static final Path USER_DIR = Path.of(".").toAbsolutePath();
+
 }

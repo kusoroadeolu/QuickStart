@@ -1,3 +1,24 @@
 {
-
+  "git_server" : {
+    "image" : "gitea/gitea:1.21.11-rootless",
+    "container_name" : "local_git_server",
+    "ports" : [ "3002:3000", "2222:22" ],
+    "environment" : [ "USER_UID=1000", "USER_GID=1000", "GITEA__database__TYPE=sqlite3", "GITEA__database__PATH=/data/gitea.db" ],
+    "volumes" : [ "gitea_data:/data", "gitea2_data:/data" ],
+    "restart" : "unless-stopped"
+  },
+  "uptime_monitor" : {
+    "image" : "louislam/uptime-kuma:1",
+    "container_name" : "kuma_dashboard",
+    "ports" : [ "3001:3001" ],
+    "volumes" : [ "kuma_data:/app/data" ],
+    "restart" : "always",
+    "logging" : {
+      "driver" : "json-file",
+      "options" : {
+        "max-size" : "10m",
+        "max-file" : "10"
+      }
+    }
+  }
 }

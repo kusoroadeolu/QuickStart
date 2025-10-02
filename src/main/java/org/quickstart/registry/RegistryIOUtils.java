@@ -2,9 +2,8 @@ package org.quickstart.registry;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import org.quickstart.ComposeBuilder;
-import org.quickstart.dtos.RegistryExport;
+import org.quickstart.dtos.ServiceExport;
 import org.quickstart.exceptions.RegistryException;
 import org.quickstart.exceptions.ServiceError;
 
@@ -14,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.quickstart.constants.QuickStartConstants.COMPOSE_VERSION;
 import static org.quickstart.constants.QuickStartConstants.REGISTRY_PATH;
 
 class RegistryIOUtils {
@@ -49,19 +47,19 @@ class RegistryIOUtils {
         }
     }
 
-    protected static RegistryExport readFromRegistry(JsonNode rootNode, Map<String, JsonNode> registryServices ,Set<String> services)
+    protected static ServiceExport readFromRegistry(JsonNode rootNode, Map<String, JsonNode> registryServices , Set<String> services)
             throws RegistryException {
         try {
 
             ComposeBuilder builder = ComposeBuilder
                     .create()
-                    .build(rootNode, services)
+                    .buildServices(rootNode, services)
                     .mapAbsentServicesToSimilarServices(registryServices.keySet());
 
             Map<String, Object> composeMap = new LinkedHashMap<>();
-            composeMap.put("version", COMPOSE_VERSION);
             composeMap.put("services", builder.presentServices());
-            return new RegistryExport(composeMap, builder.absentServicesToString());
+            composeMap.put("volumes", builder.serviceVolumes());
+            return new ServiceExport(composeMap, builder.absentServicesToString());
 
         } catch (IOException e) {
             throw new RegistryException(
