@@ -1,13 +1,13 @@
 package org.quickstart.exceptions;
 
-public class ComposeException extends QuickStartException {
+public class ProfileException extends QuickStartException {
     private ServiceError serviceError;
 
-    public ComposeException(String message) {
+    public ProfileException(String message) {
         super(message);
     }
 
-    public ComposeException(ServiceError serviceError) {
+    public ProfileException(ServiceError serviceError) {
         this.serviceError = serviceError;
         super(serviceError);
     }

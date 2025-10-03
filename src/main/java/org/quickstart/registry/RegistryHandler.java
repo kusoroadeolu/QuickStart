@@ -1,14 +1,10 @@
 package org.quickstart.registry;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
-import org.quickstart.ComposeBuilder;
+import org.quickstart.compose.ComposeBuilder;
 import org.quickstart.configurations.ObjectMapperConfig;
 import org.quickstart.dtos.RegistryExport;
 import org.quickstart.dtos.RegistryImport;
@@ -28,7 +24,7 @@ import static org.quickstart.constants.QuickStartConstants.REGISTRY_PATH;
 import static org.quickstart.registry.RegistryIOUtils.readFromRegistry;
 import static org.quickstart.registry.RegistryIOUtils.writeToRegistry;
 
-public class RegistryHandler {
+public final class RegistryHandler {
 
     private final ObjectMapper jsonMapper;
     private final YAMLMapper yamlMapper;
@@ -200,14 +196,14 @@ public class RegistryHandler {
      * */
     public ServiceExport deleteServicesFromRegistry(Set<String> servicesToDelete) throws RegistryException{
         if(servicesToDelete == null || servicesToDelete.isEmpty()){
-            throw new RegistryException("Given list of services is empty.");
+            return new ServiceExport(Collections.emptyMap(), "");
         }
 
         @SuppressWarnings("unchecked")
         Map<String, JsonNode> registryMap = jsonMapper.convertValue(registryRootNode, Map.class);
 
-        if(registryRootNode == null || registryRootNode.isEmpty()){
-            throw new RegistryException("No services were found to delete.");
+        if(registryRootNode.isEmpty()){
+            return new ServiceExport(Collections.emptyMap(), "");
         }
 
         try{
@@ -221,7 +217,7 @@ public class RegistryHandler {
 
             //We don't need to return a map of what was written to the json node,
             // but we need to return absent services (services not found) as a string
-            return new ServiceExport(null, builder.absentServicesToString());
+            return new ServiceExport(Collections.emptyMap(), builder.absentServicesToString());
         }catch (IOException e){
             throw new RegistryException(String.format("Failed to write registry to file %s.", registryMap));
         }

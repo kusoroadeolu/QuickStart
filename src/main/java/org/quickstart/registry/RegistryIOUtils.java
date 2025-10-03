@@ -2,7 +2,7 @@ package org.quickstart.registry;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.quickstart.ComposeBuilder;
+import org.quickstart.compose.ComposeBuilder;
 import org.quickstart.dtos.ServiceExport;
 import org.quickstart.exceptions.RegistryException;
 import org.quickstart.exceptions.ServiceError;
@@ -77,6 +77,7 @@ class RegistryIOUtils {
             );
         }
     }
+
 
 
 

@@ -1,14 +1,13 @@
 package org.quickstart;
 
-import org.quickstart.constants.QuickStartConstants;
-import org.quickstart.exceptions.ComposeException;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.UUID;
+
+import static org.quickstart.constants.QuickStartConstants.*;
 
 // Helper class for file operations
 public class FileUtils {
@@ -29,14 +28,22 @@ public class FileUtils {
         Files.createDirectory(folderPath);
     }
 
-    //Create a  temp yaml file. Note that this file must be deleted after use
-    public static Path createTempFile(String content) throws IOException {
+    //Create a  temp yaml file. Note that this file will be deleted after use
+    public static Path createAndWriteToTempFile(String fileName, String content) throws IOException {
         //Generate a random ID for each temp file
-        String tempName = UUID.randomUUID().toString() + ".yaml";
-        Path path = Paths.get(QuickStartConstants.TEMP_BASE_PATH.toString(), tempName);
+        String tempName = null;
 
-        Files.writeString(path, content,  StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING);
+        if(fileName == null || fileName.isEmpty()){
+            tempName = UUID.randomUUID().toString() + YAML_EXTENSION;
+        }else{
+            tempName = fileName;
+        }
+
+        Path path = Paths.get(TEMP_BASE_PATH.toString(), tempName);
+
+        Files.writeString(path, content, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING);
         return path;
-
     }
+
+
 }

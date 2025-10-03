@@ -12,5 +12,6 @@ public class QuickStartConstants {
     public static final Path PROFILE_BASE_PATH   = Path.of(USER_HOME, ".quickstart", "profile").normalize();
     public static final Path TEMP_BASE_PATH   = Path.of(USER_HOME, ".quickstart", "temp").normalize();
     public static final Path USER_DIR = Path.of(".").toAbsolutePath();
+    public static final String YAML_EXTENSION = ".yml";
 
 }

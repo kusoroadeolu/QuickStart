@@ -28,6 +28,7 @@ public class ObjectMapperConfig {
         return YAMLFactory.builder()
                 .enable(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR)//Ensure arrays are always indented
                 .enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
+                .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION)
                 .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER) // Idk what this does honestly
                 .disable(YAMLGenerator.Feature.USE_NATIVE_TYPE_ID) //This too
                 .disable(YAMLGenerator.Feature.MINIMIZE_QUOTES) //Disable quote minimization

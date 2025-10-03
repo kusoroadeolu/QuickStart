@@ -1,8 +1,7 @@
-package org.quickstart;
+package org.quickstart.compose;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.quickstart.exceptions.LambdaExceptionHandler;
 
 import java.io.IOException;
 import java.util.*;
@@ -48,7 +47,7 @@ public class ComposeBuilder {
      */
     public ComposeBuilder buildServices(JsonNode rootNode, Set<String> expectedServices) throws IOException {
         if (rootNode.isEmpty()) {
-            return null;
+            return this;
         }
 
         for (String service : expectedServices) {
@@ -80,19 +79,21 @@ public class ComposeBuilder {
         }
 
 
-        volumeNode.forEach(
-                LambdaExceptionHandler.handle(node -> {
+        volumeNode.forEach(node -> {
+
                     String volumeName = node.asText();
 
                     int firstColonIndex = volumeName.indexOf(':');
-                    volumeName = volumeName.substring(0, firstColonIndex);
+
+                    if (firstColonIndex > 0) {
+                        volumeName = volumeName.substring(0, firstColonIndex);
+                    }
 
                     if(isBindMount(volumeName)){
                         return;
                     }
-
                     serviceVolumes.put(volumeName, null);
-                }, null) //TODO Throw an actual service error here
+                }
         );
 
     }
