@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 
-import static org.quickstart.FileUtils.createFile;
 import static org.quickstart.FileUtils.createFolder;
 import static org.quickstart.constants.QuickStartConstants.*;
 
@@ -17,6 +16,10 @@ import static org.quickstart.constants.QuickStartConstants.*;
  * Initializes all necessary files/folders for quickstart
  * */
 public final class RegistryInitializer {
+
+    private RegistryInitializer() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated.");
+    }
 
     public static void initRegistry() throws RegistryException {
         initBaseDirectory();

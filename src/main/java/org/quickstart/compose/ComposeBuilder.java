@@ -2,9 +2,12 @@ package org.quickstart.compose;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.similarity.LevenshteinDistance;
+import org.quickstart.constants.QuickStartConstants;
 
 import java.io.IOException;
 import java.util.*;
+
+import static org.quickstart.constants.QuickStartConstants.SIMILARITY_DISTANCE;
 
 
 public class ComposeBuilder {
@@ -135,7 +138,7 @@ public class ComposeBuilder {
             for(String service : registryServices) {
                 dist = levenshteinDistance.apply(service, absentService);
 
-                if(dist <= 1){
+                if(dist <= SIMILARITY_DISTANCE){
                     similarServices.append(service).append(" ");
                     count++;
                 }

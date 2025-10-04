@@ -34,7 +34,7 @@ public class FileUtils {
         String tempName = null;
 
         if(fileName == null || fileName.isEmpty()){
-            tempName = UUID.randomUUID().toString() + YAML_EXTENSION;
+            tempName = UUID.randomUUID().toString() + YML_EXTENSION;
         }else{
             tempName = fileName;
         }

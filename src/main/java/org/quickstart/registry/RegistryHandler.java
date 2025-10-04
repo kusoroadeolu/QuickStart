@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import org.quickstart.compose.ComposeBuilder;
+import org.quickstart.compose.TempComposeFile;
 import org.quickstart.configurations.ObjectMapperConfig;
 import org.quickstart.dtos.RegistryExport;
 import org.quickstart.dtos.RegistryImport;
@@ -16,11 +17,11 @@ import org.quickstart.exceptions.ServiceError;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import static org.quickstart.constants.QuickStartConstants.REGISTRY_PATH;
+import static org.quickstart.constants.QuickStartConstants.USER_DIR;
 import static org.quickstart.registry.RegistryIOUtils.readFromRegistry;
 import static org.quickstart.registry.RegistryIOUtils.writeToRegistry;
 
@@ -33,12 +34,10 @@ public final class RegistryHandler {
     private RegistryHandler(){
         this.jsonMapper = ObjectMapperConfig.getJsonMapper();
         this.yamlMapper = ObjectMapperConfig.getYAMLMapper();
-        this.registryRootNode = rootNode();
+        this.registryRootNode = registryRootNode();
         if(!Files.exists(REGISTRY_PATH)){
             RegistryInitializer.initRegistryFile();
         }
-
-
     }
 
     /**
@@ -51,7 +50,7 @@ public final class RegistryHandler {
     // yaml config into the CLI
     public RegistryImport importToRegistryFromText(Map<String, String> map) throws RegistryException{
         if(map == null || map.isEmpty()) {
-            throw new  QuickStartException("Empty registry file");
+            throw new QuickStartException("Empty registry file");
         }
         List<String> existingServices = new ArrayList<>(); //A list of services which already exist in the registry
 
@@ -83,16 +82,17 @@ public final class RegistryHandler {
 
     /**
      * Import services from a yaml file to a registry
-     * @param path The path of the yaml file
+     * @param fileName The name of the yaml file
      * @return a dto containing a list of services included by the user already existing in the registry
      * */
     //My suggested method
-    public RegistryImport importToRegistryFromYaml(String path) throws RegistryException{
-        Path userPath = Paths.get(path);
-        validateFile(userPath);
+    public RegistryImport importToRegistryFromYaml(String fileName, boolean force) throws RegistryException{
+        Path path = Path.of(USER_DIR.toString(), fileName).normalize();
+        System.out.println("Path: " + path);
+        validateFile(path);
 
         try{
-            JsonNode rootNode = yamlMapper.readTree(userPath.toFile());
+            JsonNode rootNode = yamlMapper.readTree(path.toFile());
 
             if(rootNode == null || rootNode.isEmpty()){
                 throw new RegistryException(
@@ -114,13 +114,20 @@ public final class RegistryHandler {
             List<String> existingServices = new ArrayList<>();
             Set<Map.Entry<String, JsonNode>> servicesSet = servicesNode.properties();
 
-            servicesSet.forEach(e -> {
-                if(registryRootNode.has(e.getKey())) {
-                    existingServices.add(e.getKey());
-                }else{
+
+            if(force){
+                servicesSet.forEach(e -> {
                     servicesMap.put(e.getKey(), e.getValue());
-                }
-            });
+                });
+            }else{
+                servicesSet.forEach(e -> {
+                    if(registryRootNode.has(e.getKey())) {
+                        existingServices.add(e.getKey());
+                    }else{
+                        servicesMap.put(e.getKey(), e.getValue());
+                    }
+                });
+            }
 
             writeToRegistry(jsonMapper, servicesMap);
             return new RegistryImport(existingServices);
@@ -154,26 +161,58 @@ public final class RegistryHandler {
                 readFromRegistry(registryRootNode, registryServices  ,services);
 
         Map<String, Object> serviceMap = export.composeMap(); //Get the service map
-        System.out.println("DEBUG serviceMap: " + serviceMap);
-        System.out.println("DEBUG volumes: " + serviceMap.get("volumes"));
 
         try{
             String yamlString = yamlMapper.writeValueAsString(serviceMap);
             return new RegistryExport(yamlString, export.absentServices());
         }catch(JsonProcessingException e){
-            throw new RegistryException("");
+            throw new RegistryException(
+                    new ServiceError(
+                            "failed to generate YAML output",
+                            "check service configurations for invalid syntax",
+                            e)
+            );
         }
 
+    }
+
+    /**
+     * Export services from the registry into a temp yaml file, then runs it
+     * @param services The list of services given by the use
+     * @return an export class containing a yaml string of all the services found, and a string of those not found in the registry
+     * */
+    public RegistryExport buildFromRegistryAndRun(Set<String> services) throws RegistryException{
+        RegistryExport export = exportFromRegistryAsText(services);
+
+        try(TempComposeFile composeFile = new TempComposeFile(export.yamlString())){
+            composeFile.runTempFile();
+            return export;
+        }catch (IOException e){
+            throw new RegistryException(
+                    new ServiceError(
+                            "failed to create temp compose file",
+                            "check disk space and /tmp directory permissions",
+                            e)
+            );
+        }catch (InterruptedException e){
+            throw new RegistryException(
+                    new ServiceError(
+                            "docker command was interrupted",
+                            "try running the command again",
+                            e)
+            );
+        }
     }
 
 
     /**
      * Export services from the registry to a yaml file
      * @param services The set of services given by the user
-     * @param userPath The path provided by the user
+     * @param fileName The name of the file
      * @return an export class containing a yaml string of all the services found, and a string of those not found in the registry
      * */
-    public RegistryExport exportFromRegistryToYaml(Set<String> services, Path userPath) throws RegistryException{
+    public RegistryExport exportFromRegistryToFile(Set<String> services, String fileName) throws RegistryException{
+        Path userPath = Path.of(USER_DIR.toString(), fileName);
         validateFile(userPath);
         RegistryExport registryExport = exportFromRegistryAsText(services);
         try{
@@ -258,8 +297,8 @@ public final class RegistryHandler {
         }
     }
 
-
-    public JsonNode rootNode(){
+    //Get registry root node
+    private JsonNode registryRootNode(){
         try{
             return jsonMapper.readTree(REGISTRY_PATH.toFile());
         }catch(IOException e){
@@ -269,8 +308,6 @@ public final class RegistryHandler {
             );
         }
     }
-
-
 
 
     private void validateFile(Path userPath) throws RegistryException{

@@ -1,13 +1,18 @@
 package org.quickstart.configurations;
 
 import com.fasterxml.jackson.core.StreamReadFeature;
+import com.fasterxml.jackson.core.StreamWriteFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
-public class ObjectMapperConfig {
+public final class ObjectMapperConfig {
+
+    private ObjectMapperConfig() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated.");
+    }
 
     public static YAMLMapper getYAMLMapper() {
         return ObjectMapperHolder.YAML_MAPPER;

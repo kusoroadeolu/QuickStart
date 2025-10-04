@@ -1,5 +1,6 @@
 package org.quickstart.registry;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.quickstart.compose.ComposeBuilder;
@@ -7,6 +8,7 @@ import org.quickstart.dtos.ServiceExport;
 import org.quickstart.exceptions.RegistryException;
 import org.quickstart.exceptions.ServiceError;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,18 +19,24 @@ import static org.quickstart.constants.QuickStartConstants.REGISTRY_PATH;
 
 class RegistryIOUtils {
 
-    protected static void writeToRegistry(ObjectMapper jsonMapper, Map<String, JsonNode> map) throws RegistryException {
+    private RegistryIOUtils() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated.");
+    }
+
+    protected static void writeToRegistry(ObjectMapper jsonMapper, Map<String, JsonNode> mapToMerge) throws RegistryException {
+
         try {
             @SuppressWarnings("unchecked")
-            Map<String, JsonNode> fileMap = jsonMapper.readValue(REGISTRY_PATH.toFile(), Map.class);
-
-            if (fileMap == null || fileMap.isEmpty()) {
-                fileMap = new HashMap<>();
+            Map<String, JsonNode> registryFileMap = jsonMapper.readValue(REGISTRY_PATH.toFile(), Map.class);
+            IO.println(jsonMapper.writeValueAsString(registryFileMap));
+            if (registryFileMap == null || registryFileMap.isEmpty()) {
+                registryFileMap = new HashMap<>();
             }
 
-            Map<String, JsonNode> mergedMap = new HashMap<>(map);
-            mergedMap.putAll(fileMap);
-            jsonMapper.writeValue(REGISTRY_PATH.toFile(), mergedMap);
+            registryFileMap.putAll(mapToMerge);
+            IO.println(jsonMapper.writeValueAsString(registryFileMap));
+
+            jsonMapper.writeValue(REGISTRY_PATH.toFile(), registryFileMap);
 
         } catch (IOException e) {
             throw new RegistryException(
@@ -42,7 +50,7 @@ class RegistryIOUtils {
                     new ServiceError(
                             "registry file is corrupted",
                             "backup and delete `~/.quickstart/registry.yaml`, then run `quickstart init`",
-                            e)
+                            e),e
             );
         }
     }

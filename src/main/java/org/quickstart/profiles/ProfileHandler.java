@@ -1,30 +1,46 @@
 package org.quickstart.profiles;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.quickstart.compose.TempComposeFile;
 import org.quickstart.dtos.ProfileDeleteResult;
+import org.quickstart.dtos.ProfileDto;
 import org.quickstart.exceptions.ProfileException;
+import org.quickstart.exceptions.ServiceError;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.security.AllPermission;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.quickstart.constants.QuickStartConstants.*;
 
-public class ProfileHandler {
+public final class ProfileHandler {
 
+    private static final LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
 
+    private ProfileHandler(){
 
-    public static void createProfile(String profileName) throws ProfileException{
-        Path userPath = constructAndValidateProfile(profileName);
-        try{
+    }
+
+    public void createProfile(String profileName) throws ProfileException{
+        Path userPath = constructProfile(profileName);
+        try {
             Files.createFile(userPath);
+        }catch (FileAlreadyExistsException e){
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("profile '%s' already exists", profileName),
+                            "use a different name or delete the existing profile first"
+                    )
+            );
         }catch(IOException e){
-            throw new ProfileException("Profile Creation Failed");
+            throw new ProfileException(
+                    new ServiceError(
+                            "cannot create profile",
+                            "check permissions for ~/.quickstart/profiles/",
+                            e)
+            );
         }
     }
 
@@ -33,11 +49,16 @@ public class ProfileHandler {
      * @param fileName The name of the file we're importing from
      * @param profileName The name of the profile
      * */
-    public static void importToProfile(String profileName, String fileName) throws ProfileException{
+    public void importToProfile(String profileName, String fileName) throws ProfileException{
         try{
             copyYaml(fileName, profileName, true);
         }catch (IOException e){
-            throw new ProfileException("Profile Import Failed");
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("cannot import '%s' to profile", fileName),
+                            "ensure the source file exists and is readable",
+                            e)
+            );
         }
     }
 
@@ -46,14 +67,18 @@ public class ProfileHandler {
      * @param fileName The name of the file we're importing from
      * @param profileName The name of the profile
      * */
-    public static void exportToProfile(String profileName, String fileName) throws ProfileException{
+    public void exportFromProfile(String profileName, String fileName) throws ProfileException{
         try{
             copyYaml(profileName, fileName, false);
         }catch (IOException e){
-            throw new ProfileException("Profile Export Failed");
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("cannot export profile '%s'", profileName),
+                            "check if the profile exists and target directory is writable",
+                            e)
+            );
         }
     }
-
 
 
     /**
@@ -62,25 +87,35 @@ public class ProfileHandler {
      * @param targetName The name of the target file
      * @param toProfile bool value to check if we're importing to a profile or exporting
      * */
-    private static void copyYaml(String sourceName, String targetName, boolean toProfile) throws IOException {
-        Path source = decide(sourceName, toProfile);
-        Path target = decide(targetName, !toProfile);
+    private void copyYaml(String sourceName, String targetName, boolean toProfile) throws IOException {
+        Path source = decide(sourceName, !toProfile);
+        Path target = decide(targetName, toProfile);
 
         if(!Files.exists(source)){
-            throw new ProfileException(String.format("File %s does not exist", source));
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("file '%s' not found", source.getFileName()),
+                            "check the file path and try again"
+                    )
+            );
         }
 
-        YAMLMapper mapper = new YAMLMapper();
-        JsonNode node = mapper.readTree(source.toFile());
-        Files.writeString(target, mapper.writeValueAsString(node));
+        String str = Files.readString(source);
+        Files.writeString(target, str, StandardOpenOption.TRUNCATE_EXISTING);
 
     }
 
 
-    //Decides if we should return a profile path or dir path
-    private static Path decide(String fileName, boolean toProfile){
-        return toProfile ? constructAndValidateProfile(fileName) : Path.of(USER_DIR.toString(), fileName);
+    /**
+     *Decides if we should return a profile path or dir path
+     * @param toProfile The boolean flag that decides whether to create a profile or dir path
+     * @param fileName The name of the file
+     * @return A representation of the path
+     * */
+    private Path decide(String fileName, boolean toProfile){
+        return toProfile ? constructProfile(fileName) : constructDirPath(fileName);
     }
+
 
     /**
      * Lists all the profiles for a user
@@ -92,7 +127,12 @@ public class ProfileHandler {
             paths.forEach(p -> result.append(p.getFileName()).append("\n"));
             return result.toString();
         }catch (IOException e){
-            throw new ProfileException("Profile Listing Failed");
+            throw new ProfileException(
+                    new ServiceError(
+                            "cannot list profiles",
+                            "check if ~/.quickstart/profiles/ exists and is readable",
+                            e)
+            );
         }
     }
 
@@ -102,15 +142,25 @@ public class ProfileHandler {
      * */
     public void deleteProfile(String profileName) throws ProfileException{
         if (profileName == null || profileName.isEmpty()){
-            throw new ProfileException("Profile name cannot be empty");
+            throw new ProfileException(
+                    new ServiceError(
+                            "profile name required",
+                            "provide a profile name to delete"
+                    )
+            );
         }
 
-        Path profilePath = constructAndValidateProfile(profileName);
+        Path profilePath = constructProfile(profileName);
 
         try {
-            Files.delete(profilePath);
+            Files.deleteIfExists(profilePath);
         }catch (IOException e){
-            throw new ProfileException("Profile Deletion Failed");
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("cannot delete profile '%s'", profileName),
+                            "check file permissions",
+                            e)
+            );
         }
 
     }
@@ -135,35 +185,95 @@ public class ProfileHandler {
             });
             return new ProfileDeleteResult(successDeletes, failedDeletes);
         }catch (IOException e){
-            throw new ProfileException("Failed to get profile parent path");
+            throw new ProfileException(
+                    new ServiceError(
+                            "cannot access profiles directory",
+                            "check if ~/.quickstart/profiles/ exists",
+                            e)
+            );
         }
     }
 
-    public void runProfile(String profileName) throws ProfileException{
-        Path path = constructAndValidateProfile(profileName);
+    public ProfileDto runProfile(String profileName) throws ProfileException {
+        Path path = constructProfile(profileName);
+
+        try{
+            if(!Files.exists(path)){
+                return new ProfileDto(profileName, findSimilarProfiles(profileName));
+            }
+        }catch (IOException e){
+            throw new ProfileException(
+                    new ServiceError(
+                            "cannot check profile existence",
+                            "verify ~/.quickstart/profiles/ directory permissions",
+                            e)
+            );
+        }
+
         try(TempComposeFile tempComposeFile = new TempComposeFile(path)){
             tempComposeFile.runTempFile();
+            return new ProfileDto("", Collections.emptySet());
         }catch (IOException e){
-            throw new ProfileException("An error occurred?");
+            throw new ProfileException(
+                    new ServiceError(
+                            "cannot create temp compose file",
+                            "check disk space and /tmp directory permissions",
+                            e)
+            );
+        } catch (InterruptedException e) {
+            throw new ProfileException(
+                    new ServiceError(
+                            "docker command was interrupted",
+                            "try running the profile again",
+                            e)
+            );
         }
     }
 
 
+    //Finds profile names similar to that the user inputed
+    private Set<String> findSimilarProfiles(String profileName) throws IOException {
+        Set<String> similarProfiles = new HashSet<>();
 
-    private static Path constructAndValidateProfile(String profileName){
+        try(Stream<Path> paths = Files.walk(PROFILE_BASE_PATH)){
+             paths.map(p -> p.getFileName().toString())
+                     .forEach(p -> {
+                        int dist = levenshteinDistance.apply(profileName, p);
+                        if(dist <= SIMILARITY_DISTANCE){
+                            similarProfiles.add(p);
+                        }
+                    });
+        }
+
+        return similarProfiles;
+    }
+
+
+
+    private Path constructProfile(String profileName){
         if(profileName == null || profileName.isEmpty()){
-            throw new ProfileException("Profile name cannot be null or empty");
+            throw new ProfileException(
+                    new ServiceError(
+                            "profile name required",
+                            "provide a valid profile name"
+                    )
+            );
         }
 
-        profileName = profileName + YAML_EXTENSION;
+        profileName = profileName + YML_EXTENSION;
+        return Paths.get(PROFILE_BASE_PATH.toString(), profileName);
+    }
 
-        Path userPath = Paths.get(PROFILE_BASE_PATH.toString(), profileName);
+    private Path constructDirPath(String fileName){
+        return Path.of(USER_DIR.toString(), fileName);
+    }
 
-        if(Files.exists(userPath)){
-           throw new ProfileException("Profile already exists");
-        }
+    public static ProfileHandler getInstance(){
+        return ProfileHandlerHolder.INSTANCE;
+    }
 
-        return userPath;
+    private static class ProfileHandlerHolder{
+        private static final ProfileHandler INSTANCE = new ProfileHandler();
     }
 
 }

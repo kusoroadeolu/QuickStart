@@ -9,6 +9,11 @@ public class QuickStartException extends RuntimeException {
         super(message, cause);
     }
 
+    public QuickStartException(ServiceError error, Throwable cause) {
+        this.serviceError = error;
+        super(cause);
+    }
+
     public QuickStartException(String message) {
         super(message);
     }

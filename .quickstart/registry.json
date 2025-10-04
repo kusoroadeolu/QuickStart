@@ -20,5 +20,28 @@
         "max-file" : "10"
       }
     }
+  },
+  "app_test" : {
+    "image" : "python:3.11-slim",
+    "container_name" : "lightweight-app-test",
+    "command" : "sh -c \"pip install -r requirements-test.txt && pytest\"",
+    "volumes" : [ ".:/usr/src/app" ],
+    "working_dir" : "/usr/src/app",
+    "depends_on" : [ "redis" ],
+    "environment" : {
+      "REDIS_HOST" : "redis",
+      "REDIS_PORT" : 6379
+    }
+  },
+  "redis" : {
+    "image" : "redis:7-alpine",
+    "container_name" : "lightweight-redis",
+    "ports" : [ "6379:6379" ],
+    "healthcheck" : {
+      "test" : [ "CMD", "redis-cli", "ping" ],
+      "interval" : "10s",
+      "timeout" : "5s",
+      "retries" : 5
+    }
   }
 }

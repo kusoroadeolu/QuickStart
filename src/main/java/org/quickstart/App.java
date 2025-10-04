@@ -1,14 +1,13 @@
-import org.quickstart.processes.ProcessStarter;
+import org.quickstart.registry.RegistryHandler;
 
-void main()  {
-//    RegistryHandler handler = RegistryHandler.getInstance();
-//    handler.exportFromRegistryToYaml(Set.of("git_server", "uptime_monitor") ,Path.of(QuickStartConstants.USER_DIR.toString(), "docker-compose.yaml"));
+void main() throws IOException {
+    //RegistryHandler handler = RegistryHandler.getInstance();
+    //handler.exportFromRegistryToYaml(Set.of("git_server", "uptime_monitor") ,Path.of(QuickStartConstants.USER_DIR.toString(), "docker-compose.yaml"));
+//    ProfileHandler profileHandler = ProfileHandler.getInstance();
+//    profileHandler.runProfile("starter");
 
+    RegistryHandler.getInstance().importToRegistryFromYaml("myyaml.yaml", false);
+    HashMap<String, String> map = new HashMap<>();
 
-//    ProcessStarter processStarter = new ProcessStarter();
-//    String val = "file-path";
-//    String[] arr = {"docker-compose", "-f", "\"C:\\Users\\eastw\\docker-compose.yaml\"", "up", "-d"};
-    Path path = Paths.get("C:\\Users\\eastw\\Git Projects\\Personal\\QuickStart\\src\\main\\java\\org\\quickstart\\App.java");
-    IO.println(path.getFileName());
 }
 

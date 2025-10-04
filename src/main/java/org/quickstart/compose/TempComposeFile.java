@@ -7,24 +7,27 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class TempComposeFile implements AutoCloseable{
+public final class TempComposeFile implements AutoCloseable{
 
-    private static final ProcessStarter STARTER = new ProcessStarter();
+    private final static String BASE_COMMAND = "docker-compose";
+    private final static String FILE_COMMAND = "-f";
+    private final static String START_COMMAND = "up";
+    private final static String DETACH_COMMAND = "-d";
     private final Path tempFilePath;
     private final String yamlContent;
 
-    public TempComposeFile(Path source, String tempFileName) throws IOException, IllegalArgumentException {
-        yamlContent = readSource(source);
-        tempFilePath = createTempFile(tempFileName, yamlContent);
+    public TempComposeFile(Path source, String tempFileName) throws IOException {
+        this.yamlContent = readSource(source);
+        this.tempFilePath = createTempFile(tempFileName, yamlContent);
     }
 
-    public TempComposeFile(Path source) throws IOException, IllegalArgumentException {
+    public TempComposeFile(Path source) throws IOException {
         this(source, null);
     }
 
-    public TempComposeFile(String tempFileName, String yamlContent) throws IOException {
+    public TempComposeFile(String yamlContent) throws IOException {
         this.yamlContent = yamlContent;
-        tempFilePath = createTempFile(tempFileName, yamlContent);
+        this.tempFilePath = createTempFile(null, yamlContent);
     }
 
     private Path createTempFile(String fileName, String source) throws IOException {
@@ -41,9 +44,15 @@ public class TempComposeFile implements AutoCloseable{
     }
 
     //Starts the docker command for a temp file
-    public void runTempFile() throws IllegalArgumentException{
-        String[] arr = {"-f", tempFilePath.toAbsolutePath().toString(), "up", "-d"};
-        STARTER.startProcess(arr);
+    public void runTempFile() throws IllegalArgumentException, IOException, InterruptedException {
+
+        if(tempFilePath == null || !Files.exists(tempFilePath)){
+            throw new IllegalStateException("temp file does not exist");
+        }
+
+        String[] arr = {BASE_COMMAND, FILE_COMMAND, tempFilePath.toAbsolutePath().toString(), START_COMMAND, DETACH_COMMAND};
+        IO.println("Temp file path: " + tempFilePath);
+        ProcessStarter.startProcess(arr);
     }
 
     @Override
