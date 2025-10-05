@@ -1,6 +1,5 @@
 package org.quickstart.registry;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.quickstart.compose.ComposeBuilder;
@@ -8,7 +7,6 @@ import org.quickstart.dtos.ServiceExport;
 import org.quickstart.exceptions.RegistryException;
 import org.quickstart.exceptions.ServiceError;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -28,13 +26,13 @@ class RegistryIOUtils {
         try {
             @SuppressWarnings("unchecked")
             Map<String, JsonNode> registryFileMap = jsonMapper.readValue(REGISTRY_PATH.toFile(), Map.class);
-            IO.println(jsonMapper.writeValueAsString(registryFileMap));
+            System.out.println(jsonMapper.writeValueAsString(registryFileMap));
             if (registryFileMap == null || registryFileMap.isEmpty()) {
                 registryFileMap = new HashMap<>();
             }
 
             registryFileMap.putAll(mapToMerge);
-            IO.println(jsonMapper.writeValueAsString(registryFileMap));
+            System.out.println(jsonMapper.writeValueAsString(registryFileMap));
 
             jsonMapper.writeValue(REGISTRY_PATH.toFile(), registryFileMap);
 

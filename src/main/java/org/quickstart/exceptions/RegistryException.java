@@ -13,13 +13,14 @@ public class RegistryException extends QuickStartException {
     }
 
     public RegistryException(ServiceError serviceError){
-        this.serviceError = serviceError;
         super(serviceError);
+        this.serviceError = serviceError;
     }
 
     public RegistryException(ServiceError serviceError, Throwable cause) {
-        this.serviceError = serviceError;
         super(serviceError, cause);
+        this.serviceError = serviceError;
+
     }
 
     public RegistryException(String message) {

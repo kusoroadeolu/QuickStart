@@ -30,7 +30,7 @@ public final class RegistryHandler {
     private final ObjectMapper jsonMapper;
     private final YAMLMapper yamlMapper;
     private final JsonNode registryRootNode;
-    
+
     private RegistryHandler(){
         this.jsonMapper = ObjectMapperConfig.getJsonMapper();
         this.yamlMapper = ObjectMapperConfig.getYAMLMapper();
@@ -75,18 +75,20 @@ public final class RegistryHandler {
                     }
                 }, HashMap::putAll);
 
-                writeToRegistry(jsonMapper, filtered);
-                return new RegistryImport(existingServices);
+        writeToRegistry(jsonMapper, filtered);
+        return new RegistryImport(existingServices);
     }
 
 
     /**
      * Import services from a yaml file to a registry
      * @param fileName The name of the yaml file
+     * @param excludedServices The services you want to exclude from the yaml file. Leave empty if you want to exclude nothing
+     * @param force Overwrites already existing services
      * @return a dto containing a list of services included by the user already existing in the registry
      * */
     //My suggested method
-    public RegistryImport importToRegistryFromYaml(String fileName, boolean force) throws RegistryException{
+    public RegistryImport importToRegistryFromYaml(String fileName, Set<String> excludedServices ,boolean force) throws RegistryException{
         Path path = Path.of(USER_DIR.toString(), fileName).normalize();
         System.out.println("Path: " + path);
         validateFile(path);
@@ -117,11 +119,14 @@ public final class RegistryHandler {
 
             if(force){
                 servicesSet.forEach(e -> {
-                    servicesMap.put(e.getKey(), e.getValue());
+                    if(!excludedServices.contains(e.getKey())){
+                        servicesMap.put(e.getKey(), e.getValue());
+                    }
+
                 });
             }else{
                 servicesSet.forEach(e -> {
-                    if(registryRootNode.has(e.getKey())) {
+                    if(!excludedServices.contains(e.getKey()) && registryRootNode.has(e.getKey())) {
                         existingServices.add(e.getKey());
                     }else{
                         servicesMap.put(e.getKey(), e.getValue());
@@ -328,7 +333,7 @@ public final class RegistryHandler {
 
 
 
-    public static class QuickStartClassHolder {
+    private static class QuickStartClassHolder {
         private static final RegistryHandler INSTANCE = new RegistryHandler();
     }
 }

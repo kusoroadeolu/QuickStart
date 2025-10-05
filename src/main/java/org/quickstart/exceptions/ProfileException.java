@@ -8,7 +8,8 @@ public class ProfileException extends QuickStartException {
     }
 
     public ProfileException(ServiceError serviceError) {
-        this.serviceError = serviceError;
         super(serviceError);
+        this.serviceError = serviceError;
+
     }
 }

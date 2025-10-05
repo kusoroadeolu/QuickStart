@@ -51,7 +51,7 @@ public final class TempComposeFile implements AutoCloseable{
         }
 
         String[] arr = {BASE_COMMAND, FILE_COMMAND, tempFilePath.toAbsolutePath().toString(), START_COMMAND, DETACH_COMMAND};
-        IO.println("Temp file path: " + tempFilePath);
+        System.out.println("Temp file path: " + tempFilePath);
         ProcessStarter.startProcess(arr);
     }
 
