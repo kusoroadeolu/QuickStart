@@ -7,7 +7,7 @@ import picocli.CommandLine;
 
 
 @CommandLine.Command(
-        name = "up",
+        name = "export",
         description = "Export profile content to a file",
         mixinStandardHelpOptions = true,
         version = "1.0"

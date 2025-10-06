@@ -1,29 +1,32 @@
 version: '3.8'
 
 services:
-  # A service for your application tests
-  app_test:
-    # Replace 'your-test-image:latest' with your actual test image name
-    # or use 'build: .' if you need to build from a local Dockerfile
-    image: python:3.11-slim
-    container_name: lightweight-app-test
-    # Command to run your test suite
-    command: sh -c "pip install -r requirements-test.txt && pytest"
-    # Mount your local code into the container
-    volumes:
-      - .:/usr/src/app
-    working_dir: /usr/src/app
-    # Link to the redis service
-    depends_on:
-      - redis
-    # Environment variables your tests might need
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-
-  # A lightweight Redis instance for testing caching or task queues
   redis:
     image: redis:7-alpine
-    container_name: lightweight-redis
+    container_name: test-redis
     ports:
       - "6379:6379"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: test-postgres
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: test-nginx
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

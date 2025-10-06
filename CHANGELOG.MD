@@ -19,3 +19,16 @@ This file contains all important changelogs for QuickStart
 #### Modified
 + Modified profile creation decision logic
 + Modified registry methods to only handle base paths
+
+### 10/5/2025
+#### Added
++ Created command structure and integrated pico cli to project
++ Added more robust error handling around the code
+
+### 10/6/2025
+#### Added
++ Added installation scripts for both windows and unix users
+
+#### Fixed 
++ Fixed an issue where the registry handler class didn't load before it threw an exception
+

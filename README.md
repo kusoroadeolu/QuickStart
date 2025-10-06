@@ -8,65 +8,26 @@ QuickStart keeps service definitions in `~/.quickstart/registry.json` and genera
 
 ## Installation
 
-### Build
+### Prerequisites
+- Java 17 or higher
+- Docker or Docker Desktop
+- Git
 
+### Build and Install
 ```bash
-# Clone and build
-git clone https://github.com/yourusername/quickstart.git
+# Clone the repository
+git clone https://github.com/kusoroadeolu/QuickStart
 cd quickstart
+
+# Build the project
 mvn clean package
+
+# Run the installer for your OS
+install.bat              # Windows
+chmod +x install.sh && ./install.sh    # Unix/Linux/macOS
 ```
 
-### Install
-
-**Windows:**
-
-Run the provided `install.bat` script:
-
-```batch
-@echo off
-mkdir "%USERPROFILE%\.quickstart" 2>nul
-copy quickstart.jar "%USERPROFILE%\.quickstart\"
-(
-echo @echo off
-echo java -jar "%%USERPROFILE%%\.quickstart\quickstart.jar" %%*
-) > "%USERPROFILE%\.quickstart\quickstart.bat"
-echo.
-echo ✓ Quickstart installed!
-echo.
-echo Add this to your PATH: %%USERPROFILE%%\.quickstart
-echo Then run: quickstart --help
-pause
-```
-
-Then add `%USERPROFILE%\.quickstart` to your system PATH.
-
-**Unix/Linux/macOS:**
-
-Run the provided `install.sh` script:
-
-```bash
-#!/bin/bash
-
-mkdir -p ~/.quickstart
-cp quickstart.jar ~/.quickstart/
-
-cat > ~/.quickstart/quickstart << 'EOF'
-#!/bin/bash
-java -jar ~/.quickstart/quickstart.jar "$@"
-EOF
-
-chmod +x ~/.quickstart/quickstart
-
-echo "✓ Quickstart installed!"
-echo ""
-echo "Add to your PATH by adding this line to ~/.bashrc or ~/.zshrc:"
-echo "export PATH=\"\$HOME/.quickstart:\$PATH\""
-echo ""
-echo "Then reload: source ~/.bashrc"
-```
-
-After installation, use `qs` or `quickstart` as your command.
+After installation, use `qs` as your command.
 
 ## Quick Start
 
@@ -132,7 +93,7 @@ qs init
 Creates:
 - `~/.quickstart/registry.json` - Service definitions storage
 - `~/.quickstart/profiles/` - Profile files directory
-- `~/.quickstart/tmp/` - Temporary compose files location
+- `~/.quickstart/tesmp/` - Temporary compose files location
 
 ---
 

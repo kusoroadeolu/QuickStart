@@ -292,7 +292,7 @@ public final class ProfileHandler {
     }
 
 
-    //Finds profile names similar to that the user inputed
+    //Finds profile names similar to that the user inputted
     private Set<String> findSimilarProfiles(String profileName) throws IOException {
         Set<String> similarProfiles = new HashSet<>();
 

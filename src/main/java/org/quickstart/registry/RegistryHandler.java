@@ -155,8 +155,15 @@ public final class RegistryHandler {
             );
         }
 
+        if(registryRootNode == null || registryRootNode.isEmpty()){
+            throw new RegistryException(
+                    new ServiceError("no services found in registry", "use 'qs add -f <file>' to import services from a compose file")
+            );
+        }
+
         @SuppressWarnings("unchecked")
         Map<String, JsonNode> registryServices = jsonMapper.convertValue(registryRootNode, Map.class);
+
 
         ServiceExport export =
                 readFromRegistry(registryRootNode, registryServices  ,services);
@@ -332,12 +339,30 @@ public final class RegistryHandler {
 
 
     public static RegistryHandler getInstance() throws RegistryException{
+        if (QuickStartClassHolder.INIT_EXCEPTION != null) {
+            throw QuickStartClassHolder.INIT_EXCEPTION;  // ← Did you add this?
+        }
         return QuickStartClassHolder.INSTANCE;
     }
 
 
 
     private static class QuickStartClassHolder  {
-        private static final RegistryHandler INSTANCE = new RegistryHandler();
+        private static final RegistryHandler INSTANCE;
+        private static final RegistryException INIT_EXCEPTION;
+
+        static {
+            RegistryHandler handler = null;
+            RegistryException ex = null;
+
+            try{
+                handler = new RegistryHandler();
+            }catch(RegistryException e){
+                ex = e;
+            }
+
+            INSTANCE = handler;
+            INIT_EXCEPTION = ex;
+        }
     }
 }

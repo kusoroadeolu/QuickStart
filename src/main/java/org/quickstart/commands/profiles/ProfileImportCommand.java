@@ -7,7 +7,7 @@ import picocli.CommandLine;
 
 
 @CommandLine.Command(
-        name = "up",
+        name = "import",
         description = "Import file content to a profile",
         mixinStandardHelpOptions = true,
         version = "1.0"
