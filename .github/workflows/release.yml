@@ -29,3 +29,23 @@ jobs:
           asset_path: ./target/quickstart.jar
           asset_name: quickstart.jar
           asset_content_type: application/java-archive
+
+      - name: Upload Windows Installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./install.bat
+          asset_name: install.bat
+          asset_content_type: application/octet-stream
+
+      - name: Upload Unix Installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./install.sh
+          asset_name: install.sh
+          asset_content_type: application/octet-stream
