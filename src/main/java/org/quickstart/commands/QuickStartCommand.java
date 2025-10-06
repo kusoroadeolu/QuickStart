@@ -1,5 +1,6 @@
 package org.quickstart.commands;
 
+import org.quickstart.compose.TempDirCleaner;
 import picocli.CommandLine;
 
 import static picocli.CommandLine.ScopeType.INHERIT;
@@ -37,7 +38,8 @@ final class QuickStartCommand implements Runnable {
     }
 
     public static void main(String[] args) throws Exception {
-        new  CommandLine(new QuickStartCommand()).execute(args);
+        TempDirCleaner.getInstance().checkForTempFiles();
+        new CommandLine(new QuickStartCommand()).execute(args);
     }
 
 }

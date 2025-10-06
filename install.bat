@@ -18,8 +18,8 @@ if errorlevel 1 (
 )
 
 REM Check if quickstart.jar exists
-if not exist "quickstart.jar" (
-    echo [ERROR] quickstart.jar not found in current directory.
+if not exist "target\quickstart.jar" (
+    echo [ERROR] quickstart.jar not found in target directory.
     echo Please run 'mvn clean package' first.
     echo.
     pause
@@ -30,7 +30,7 @@ echo [1/4] Creating QuickStart directory...
 mkdir "%USERPROFILE%\.quickstart" 2>nul
 
 echo [2/4] Copying JAR file...
-copy /Y quickstart.jar "%USERPROFILE%\.quickstart\" >nul
+copy /Y target\quickstart.jar "%USERPROFILE%\.quickstart\quickstart.jar" >nul
 
 echo [3/4] Creating command wrapper...
 REM Create qs.bat (short alias)

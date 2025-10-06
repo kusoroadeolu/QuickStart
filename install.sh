@@ -14,10 +14,20 @@ if ! command -v java &> /dev/null; then
     exit 1
 fi
 
-# Check if quickstart.jar exists
-if [ ! -f "quickstart.jar" ]; then
-    echo "[ERROR] quickstart.jar not found in current directory."
-    echo "Please run 'mvn clean package' first."
+# Check if quickstart.jar exists in multiple locations
+JAR_PATH=""
+if [ -f "quickstart.jar" ]; then
+    JAR_PATH="quickstart.jar"
+    echo "[INFO] Found quickstart.jar in current directory"
+elif [ -f "target/quickstart.jar" ]; then
+    JAR_PATH="target/quickstart.jar"
+    echo "[INFO] Found quickstart.jar in target directory"
+else
+    echo "[ERROR] quickstart.jar not found."
+    echo ""
+    echo "Please either:"
+    echo "  1. Download quickstart.jar from GitHub releases and place it here"
+    echo "  2. Build from source with 'mvn clean package'"
     echo ""
     exit 1
 fi
@@ -26,7 +36,7 @@ echo "[1/4] Creating QuickStart directory..."
 mkdir -p ~/.quickstart
 
 echo "[2/4] Copying JAR file..."
-cp quickstart.jar ~/.quickstart/
+cp "$JAR_PATH" ~/.quickstart/quickstart.jar
 
 echo "[3/4] Creating command wrapper..."
 # Create short alias
