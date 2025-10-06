@@ -26,14 +26,11 @@ class RegistryIOUtils {
         try {
             @SuppressWarnings("unchecked")
             Map<String, JsonNode> registryFileMap = jsonMapper.readValue(REGISTRY_PATH.toFile(), Map.class);
-            System.out.println(jsonMapper.writeValueAsString(registryFileMap));
             if (registryFileMap == null || registryFileMap.isEmpty()) {
                 registryFileMap = new HashMap<>();
             }
 
             registryFileMap.putAll(mapToMerge);
-            System.out.println(jsonMapper.writeValueAsString(registryFileMap));
-
             jsonMapper.writeValue(REGISTRY_PATH.toFile(), registryFileMap);
 
         } catch (IOException e) {
@@ -64,7 +61,11 @@ class RegistryIOUtils {
 
             Map<String, Object> composeMap = new LinkedHashMap<>();
             composeMap.put("services", builder.presentServices());
-            composeMap.put("volumes", builder.serviceVolumes());
+
+            //Ensure there are actually volumes to be mounted
+            if(!builder.serviceVolumes().isEmpty()){
+                composeMap.put("volumes", builder.serviceVolumes());
+            }
             return new ServiceExport(composeMap, builder.absentServicesToString());
 
         } catch (IOException e) {

@@ -2,7 +2,6 @@ package org.quickstart.compose;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.quickstart.constants.QuickStartConstants;
 
 import java.io.IOException;
 import java.util.*;
@@ -190,6 +189,7 @@ public class ComposeBuilder {
         if(!noMatches.isEmpty()) {
             sb.append("service not found: ");
             sb.append(String.join(", ", noMatches));
+            sb.append("  hint: run `quickstart ls` to see available services");
             sb.append("\n");
         }
 

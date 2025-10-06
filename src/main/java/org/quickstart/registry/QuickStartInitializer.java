@@ -1,5 +1,6 @@
 package org.quickstart.registry;
 
+import org.quickstart.exceptions.QuickStartException;
 import org.quickstart.exceptions.RegistryException;
 import org.quickstart.exceptions.ServiceError;
 
@@ -15,13 +16,15 @@ import static org.quickstart.constants.QuickStartConstants.*;
 /**
  * Initializes all necessary files/folders for quickstart
  * */
-public final class RegistryInitializer {
+public final class QuickStartInitializer {
 
-    private RegistryInitializer() {
+    private final static String JSON_BRACES = "{\n}";
+
+    private QuickStartInitializer() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated.");
     }
 
-    public static void initRegistry() throws RegistryException {
+    public static void initQuickStart() throws QuickStartException {
         initBaseDirectory();
         initRegistryFile();
         initProfilesFolder();
@@ -31,11 +34,11 @@ public final class RegistryInitializer {
     /**
      * Creates the base configuration directory (~/.quickstart/).
      */
-    public static void initBaseDirectory() throws RegistryException {
+    private static void initBaseDirectory() throws QuickStartException {
         try {
             createFolder(BASE_PATH);
         } catch (AccessDeniedException e) {
-            throw new RegistryException(
+            throw new QuickStartException(
                     new ServiceError(
                             "cannot create config directory",
                             String.format("run `chmod 755 %s` or check parent directory permissions", USER_HOME),
@@ -43,7 +46,7 @@ public final class RegistryInitializer {
             );
         } catch (IOException e) {
             if (e.getMessage() != null && e.getMessage().toLowerCase().contains("space")) {
-                throw new RegistryException(
+                throw new QuickStartException(
                         new ServiceError(
                                 "insufficient disk space",
                                 "free up space on your home directory",
@@ -51,7 +54,7 @@ public final class RegistryInitializer {
                 );
             }
 
-            throw new RegistryException(
+            throw new QuickStartException(
                     new ServiceError(
                             String.format("failed to create directory `%s`", BASE_PATH),
                             "ensure the parent directory exists and is writable",
@@ -63,11 +66,11 @@ public final class RegistryInitializer {
     /**
      * Creates the profiles subdirectory (~/.quickstart/profiles/).
      */
-    public static void initProfilesFolder() throws RegistryException {
+    private static void initProfilesFolder() throws QuickStartException {
         try {
             createFolder(PROFILE_BASE_PATH);
         } catch (IOException e) {
-            throw new RegistryException(
+            throw new QuickStartException(
                     new ServiceError(
                             "cannot create profiles directory",
                             String.format("try `mkdir -p %s` manually to check permissions", PROFILE_BASE_PATH),
@@ -76,11 +79,11 @@ public final class RegistryInitializer {
         }
     }
 
-    public static void initTempFolder() throws RegistryException {
+    private static void initTempFolder() throws QuickStartException {
         try {
             createFolder(TEMP_BASE_PATH);
         } catch (IOException e) {
-            throw new RegistryException(
+            throw new QuickStartException(
                     new ServiceError(
                             "cannot create profiles directory",
                             String.format("try `mkdir -p %s` manually to check permissions", PROFILE_BASE_PATH),
@@ -92,25 +95,25 @@ public final class RegistryInitializer {
     /**
      * Creates the main registry file (~/.quickstart/registry.yaml).
      */
-    public static void initRegistryFile() throws RegistryException {
+    private static void initRegistryFile() throws QuickStartException {
         try {
-            Files.write(REGISTRY_PATH, "{\n}".getBytes(), StandardOpenOption.CREATE);
+            Files.write(REGISTRY_PATH, JSON_BRACES.getBytes(), StandardOpenOption.CREATE);
         } catch (AccessDeniedException e) {
-            throw new RegistryException(
+            throw new QuickStartException(
                     new ServiceError(
                             "permission denied creating registry file",
                             String.format("run `touch %s` to test file creation permissions", REGISTRY_PATH),
                             e)
             );
         } catch (NoSuchFileException e) {
-            throw new RegistryException(
+            throw new QuickStartException(
                     new ServiceError(
                             "registry directory does not exist",
                             "run `quickstart init` first to create the config directory",
                             e)
             );
         } catch (IOException e) {
-            throw new RegistryException(
+            throw new QuickStartException(
                     new ServiceError(
                             String.format("failed to create `%s`", REGISTRY_PATH),
                             "check disk space with `df -h` and directory permissions",

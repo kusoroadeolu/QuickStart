@@ -31,13 +31,10 @@ public final class RegistryHandler {
     private final YAMLMapper yamlMapper;
     private final JsonNode registryRootNode;
 
-    private RegistryHandler(){
+    private RegistryHandler() throws RegistryException{
         this.jsonMapper = ObjectMapperConfig.getJsonMapper();
         this.yamlMapper = ObjectMapperConfig.getYAMLMapper();
         this.registryRootNode = registryRootNode();
-        if(!Files.exists(REGISTRY_PATH)){
-            RegistryInitializer.initRegistryFile();
-        }
     }
 
     /**
@@ -90,7 +87,6 @@ public final class RegistryHandler {
     //My suggested method
     public RegistryImport importToRegistryFromYaml(String fileName, Set<String> excludedServices ,boolean force) throws RegistryException{
         Path path = Path.of(USER_DIR.toString(), fileName).normalize();
-        System.out.println("Path: " + path);
         validateFile(path);
 
         try{
@@ -170,7 +166,7 @@ public final class RegistryHandler {
         try{
             String yamlString = yamlMapper.writeValueAsString(serviceMap);
             return new RegistryExport(yamlString, export.absentServices());
-        }catch(JsonProcessingException e){
+        }catch(Exception e){
             throw new RegistryException(
                     new ServiceError(
                             "failed to generate YAML output",
@@ -236,18 +232,18 @@ public final class RegistryHandler {
     /**
      * Deletes a set of services from the registry
      * @param servicesToDelete The set of services to delete
-     * @return {@link ServiceExport} A dto which contains a map of the
+     * @return {@link RegistryExport}
      * */
-    public ServiceExport deleteServicesFromRegistry(Set<String> servicesToDelete) throws RegistryException{
+    public RegistryExport deleteServicesFromRegistry(Set<String> servicesToDelete) throws RegistryException{
         if(servicesToDelete == null || servicesToDelete.isEmpty()){
-            return new ServiceExport(Collections.emptyMap(), "");
+            return new RegistryExport("", "");
         }
 
         @SuppressWarnings("unchecked")
         Map<String, JsonNode> registryMap = jsonMapper.convertValue(registryRootNode, Map.class);
 
         if(registryRootNode.isEmpty()){
-            return new ServiceExport(Collections.emptyMap(), "");
+            return new RegistryExport("", "no services found in the registry to delete");
         }
 
         try{
@@ -259,9 +255,9 @@ public final class RegistryHandler {
             String modifiedRegistryString = jsonMapper.writeValueAsString(builder.presentServices());
             Files.writeString(REGISTRY_PATH, modifiedRegistryString);
 
-            //We don't need to return a map of what was written to the json node,
+            //We don't need to return a string of what was written to the json node,
             // but we need to return absent services (services not found) as a string
-            return new ServiceExport(Collections.emptyMap(), builder.absentServicesToString());
+            return new RegistryExport("", builder.absentServicesToString());
         }catch (IOException e){
             throw new RegistryException(String.format("Failed to write registry to file %s.", registryMap));
         }
@@ -284,26 +280,34 @@ public final class RegistryHandler {
         }
     }
 
+    //Checks if a service exists
+    public boolean doesServiceExist(String serviceName){
+        return registryRootNode.has(serviceName);
+    }
 
-    //List all services in the registry. Should be used when exposed to the cli as a help
+
+    //List all services in the registry
     public String listAllServicesInRegistry(){
         List<String> services =
                 registryRootNode.propertyStream().map(Map.Entry::getKey).toList();
 
         if(services.isEmpty()){
-            return "No services were found in the registry.";
-        }else{
-            int count = 1;
-            StringBuilder sb = new StringBuilder(String.format("Found %d services in the registry.", count));
-            services.forEach(s -> {
-                sb.append(String.format("%d. - %s\n", count, s));
-            });
-            return sb.toString();
+            return "no services in registry\nhint: use `qs add -f <file>` to import services";
         }
+
+        StringBuilder sb = new StringBuilder(String.format("found %d service%s:\n",
+                services.size(),
+                services.size() == 1 ? "" : "s"));
+
+        for(int i = 0; i < services.size(); i++) {
+            sb.append(String.format("  %d. %s\n", i + 1, services.get(i)));
+        }
+
+        return sb.toString().trim();
     }
 
     //Get registry root node
-    private JsonNode registryRootNode(){
+    private JsonNode registryRootNode() throws RegistryException{
         try{
             return jsonMapper.readTree(REGISTRY_PATH.toFile());
         }catch(IOException e){
@@ -327,13 +331,13 @@ public final class RegistryHandler {
     }
 
 
-    public static RegistryHandler getInstance(){
+    public static RegistryHandler getInstance() throws RegistryException{
         return QuickStartClassHolder.INSTANCE;
     }
 
 
 
-    private static class QuickStartClassHolder {
+    private static class QuickStartClassHolder  {
         private static final RegistryHandler INSTANCE = new RegistryHandler();
     }
 }

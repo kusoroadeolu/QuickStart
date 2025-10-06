@@ -5,6 +5,7 @@ import java.util.List;
 
 public record RegistryImport(List<String> existingServices){
 
+    @Override
     public String toString(){
         if(existingServices == null || existingServices.isEmpty()) {
             return "all services imported successfully";
@@ -15,6 +16,7 @@ public record RegistryImport(List<String> existingServices){
                 String.format("skipped %d existing service%s: ", count, count == 1 ? "" : "s")
         );
         sb.append(String.join(", ", existingServices));
+        sb.append("\n hint: use the --force command to overwrite existing services");
         return sb.toString();
     }
 

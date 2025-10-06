@@ -50,6 +50,7 @@ public final class ProfileHandler {
      * @param profileName The name of the profile
      * */
     public void importToProfile(String profileName, String fileName) throws ProfileException{
+        ensureProfileExists(profileName);
         try{
             copyYaml(fileName, profileName, true);
         }catch (IOException e){
@@ -63,11 +64,36 @@ public final class ProfileHandler {
     }
 
     /**
+     * Reads and returns the contents of a profile file as plain text.
+     *
+     * @param profileName the name of the profile to export
+     * @return the raw YAML content of the profile
+     * @throws ProfileException if the profile cannot be read
+     */
+    public String exportProfileContentAsText(String profileName) throws ProfileException {
+        ensureProfileExists(profileName);
+        Path profilePath = Path.of(PROFILE_BASE_PATH.toString(), profileName).normalize();
+
+        try {
+            return Files.readString(profilePath);
+        } catch (IOException e) {
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("cannot read profile '%s'", profileName),
+                            "check file permissions or verify that ~/.quickstart/profiles/ is accessible",
+                            e
+                    )
+            );
+        }
+    }
+
+    /**
      * Imports from a yaml file to a profile. We assume the file, is in the user's base dir
      * @param fileName The name of the file we're importing from
      * @param profileName The name of the profile
      * */
     public void exportFromProfile(String profileName, String fileName) throws ProfileException{
+        ensureProfileExists(profileName);
         try{
             copyYaml(profileName, fileName, false);
         }catch (IOException e){
@@ -105,6 +131,30 @@ public final class ProfileHandler {
 
     }
 
+    /**
+     * Checks if a profile exists (case-sensitive).
+     *
+     * @param profileName the name of the profile to check
+     * @throws ProfileException if the profile does not exist
+     */
+    public void ensureProfileExists(String profileName) throws ProfileException {
+        Path profilePath = Path.of(PROFILE_BASE_PATH.toString(), profileName).normalize();
+
+        if (!Files.exists(profilePath)) {
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("profile '%s' not found", profileName),
+                            "check the file path or run the `profile ls` command to view available profiles"
+                    )
+            );
+        }
+    }
+
+    public boolean doesProfileExist(String profileName) throws ProfileException{
+        Path profilePath = Path.of(PROFILE_BASE_PATH.toString(), profileName).normalize();
+        return Files.exists(profilePath);
+    }
+
 
     /**
      *Decides if we should return a profile path or dir path
@@ -118,15 +168,33 @@ public final class ProfileHandler {
 
 
     /**
-     * Lists all the profiles for a user
-     * @return A string of all the profiles
-     * */
-    public String listAllProfiles(){
-        try(Stream<Path> paths = Files.walk(PROFILE_BASE_PATH)){
-            StringBuilder result = new StringBuilder();
-            paths.forEach(p -> result.append(p.getFileName()).append("\n"));
-            return result.toString();
-        }catch (IOException e){
+     * Generates a user-friendly summary of all saved profiles.
+     *
+     * @return A formatted string listing all profiles, or a helpful message if none exist.
+     */
+    public String listAllProfiles() {
+        try (Stream<Path> paths = Files.walk(PROFILE_BASE_PATH, 1)) {
+            List<String> profiles = paths
+                    .filter(p -> !p.equals(PROFILE_BASE_PATH))
+                    .map(p -> p.getFileName().toString())
+                    .sorted()
+                    .toList();
+
+            if (profiles.isEmpty()) {
+                return """
+                   no profiles found.
+                   hint: create one with `quickstart profile create <name>`
+                   """;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("available profiles:\n");
+            profiles.forEach(p -> sb.append("  • ").append(p).append("\n"));
+            sb.append("\nuse `quickstart profile show <name>` to view a profile’s contents");
+
+            return sb.toString().trim();
+
+        } catch (IOException e) {
             throw new ProfileException(
                     new ServiceError(
                             "cannot list profiles",
@@ -136,20 +204,13 @@ public final class ProfileHandler {
         }
     }
 
+
     /**
      * Deletes a profile
      * @param profileName The name of the profile
      * */
     public void deleteProfile(String profileName) throws ProfileException{
-        if (profileName == null || profileName.isEmpty()){
-            throw new ProfileException(
-                    new ServiceError(
-                            "profile name required",
-                            "provide a profile name to delete"
-                    )
-            );
-        }
-
+        ensureProfileExists(profileName);
         Path profilePath = constructProfile(profileName);
 
         try {
@@ -195,8 +256,8 @@ public final class ProfileHandler {
     }
 
     public ProfileDto runProfile(String profileName) throws ProfileException {
+        ensureProfileExists(profileName);
         Path path = constructProfile(profileName);
-
         try{
             if(!Files.exists(path)){
                 return new ProfileDto(profileName, findSimilarProfiles(profileName));
