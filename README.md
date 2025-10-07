@@ -19,7 +19,8 @@ No Maven or Git required.
 1. Go to the [latest release](https://github.com/kusoroadeolu/QuickStart/releases/latest)
 2. Download `quickstart.jar` and `install.bat` (Windows) or `install.sh` (Unix/Linux/macOS)
 3. Put both files in the same folder
-4. Run the installer:
+4. Run the installer
+ #### NOTE:  Ensure you're in the same directory as the  jar file before you run the installation script
 
 **Windows:**
 ```bash
@@ -50,13 +51,13 @@ install.bat         # Windows
 
 Restart your terminal after installation.
 
-## Quick Start
+## Basic QuickStart Commands
 
 ```bash
-qs init
-qs add -f docker-compose.yml
-qs up postgres redis
-qs ls
+qs init # initialize quickstart
+qs add -f docker-compose.yml   # add the services from docker-compose.yml to the registry
+qs up postgres redis # execute postgres and redis services from the registry
+qs ls # list all services in the registry
 ```
 
 ## How It Works
@@ -285,7 +286,7 @@ qs up postgres redis
 ## Registry vs Profiles
 
 **Use Registry Services for:**
-- Mix and match individual services
+- Mixing individual services on the fly
 - Building custom combinations per project
 - Managing reusable service building blocks
 
@@ -311,10 +312,10 @@ qs up postgres redis
 
 ## Notes
 
-- Temporary compose files are created in `~/.quickstart/tmp/` and deleted immediately after execution
+- Temporary compose files are created in `~/.quickstart/tmp/` and deleted immediately after execution, if they fail to delete, they'll be deleted on the next run
 - Your Docker containers continue running after temp file deletion
 - Service names in the registry must be unique
-- Use `--force` when importing to overwrite existing services
+- Use `--force` when importing to overwrite existing services 
 - Named volumes from service definitions are automatically added to the top-level `volumes:` section (bind mounts are excluded)
 - Similar service names are suggested using Levenshtein distance (up to 3 suggestions, distance ≤ 2)
 - Profile names automatically get `.yml` extension
@@ -327,7 +328,7 @@ service not found: postgre (did you mean: postgres?)
   hint: run `quickstart ls` to see available services
 ```
 
-Use `-v` flag for full stack traces when debugging.
+Use `-v, --verbose` flags for full stack traces when debugging.
 
 ## Examples
 
@@ -344,7 +345,10 @@ qs up postgres
 # Create a complete dev environment
 qs profile create fullstack-dev
 qs profile import fullstack-dev -f complete-stack.yml
-qs profile up fullstack-dev
+
+# Next time you need this dev environment, you can just start it or export it to your workspace
+qs export fullstack-dev -f compose.yaml #export the profile to your compose file in your current workspace
+qs profile up fullstack-dev # start the dev environment
 
 # Export for deployment
 qs export postgres nginx -f production-services.yml
