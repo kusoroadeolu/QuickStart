@@ -9,7 +9,7 @@ QuickStart keeps service definitions in `~/.quickstart/registry.json` and genera
 ## Installation
 
 ### Prerequisites
-- Java 17 or higher
+- Java 21 or higher
 - Docker or Docker Desktop
 
 ### Option 1: Download Pre-built Release (Recommended)

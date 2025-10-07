@@ -9,7 +9,7 @@ echo ""
 # Check if Java is installed
 if ! command -v java &> /dev/null; then
     echo "[ERROR] Java is not installed or not in PATH."
-    echo "Please install Java 17 or higher and try again."
+    echo "Please install Java 21 or higher and try again."
     echo ""
     exit 1
 fi
