@@ -4,7 +4,7 @@ A CLI tool for managing Docker Compose services through a centralized registry. 
 
 ## Core Concept
 
-QuickStart keeps service definitions in `~/.quickstart/registry.json` and generates temporary compose files only when running services. The temp files are created in `~/.quickstart/tmp/`, executed via `docker compose up -d`, then immediately deleted. Your containers keep running—only the configuration file is temporary.
+QuickStart keeps service definitions in `~/.quickstart/registry.json` and generates temporary compose files only when running services. The temp files are created in `~/.quickstart/tmp/`, executed via `docker compose up -d`, then immediately deleted. Your containers keep running only the configuration file is temporary.
 
 ## Installation
 
@@ -347,9 +347,9 @@ qs profile create fullstack-dev
 qs profile import fullstack-dev -f complete-stack.yml
 
 # Next time you need this dev environment, you can just start it or export it to your workspace
-qs export fullstack-dev -f compose.yaml #export the profile to your compose file in your current workspace
+qs profile export fullstack-dev -f compose.yaml #export the profile to your compose file in your current workspace
 qs profile up fullstack-dev # start the dev environment
 
-# Export for deployment
+# Export deployment config to workspace quickly
 qs export postgres nginx -f production-services.yml
 ```
