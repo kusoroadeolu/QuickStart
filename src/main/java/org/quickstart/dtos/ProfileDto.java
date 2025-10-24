@@ -14,7 +14,7 @@ public record ProfileDto(
     @Override
     public String toString() {
         if(similarProfiles == null || similarProfiles.isEmpty()) {
-            return String.format("no similar profiles found for '%s'", profileName);
+            return String.format("profile '%s' not found. no similar profiles found for '%s'", profileName, profileName);
         }
 
         return String.format("profile '%s' not found (did you mean: %s?)",

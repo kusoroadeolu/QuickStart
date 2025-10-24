@@ -8,8 +8,10 @@ import org.quickstart.exceptions.ProfileException;
 import org.quickstart.exceptions.ServiceError;
 
 import java.io.IOException;
-import java.nio.file.*;
-import java.security.AllPermission;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -44,24 +46,7 @@ public final class ProfileHandler {
         }
     }
 
-    /**
-     * Imports from a yaml file to a profile. We assume the file, is in the user's base dir
-     * @param fileName The name of the file we're importing from
-     * @param profileName The name of the profile
-     * */
-    public void importToProfile(String profileName, String fileName) throws ProfileException{
-        ensureProfileExists(profileName);
-        try{
-            copyYaml(fileName, profileName, true);
-        }catch (IOException e){
-            throw new ProfileException(
-                    new ServiceError(
-                            String.format("cannot import '%s' to profile", fileName),
-                            "ensure the source file exists and is readable",
-                            e)
-            );
-        }
-    }
+
 
     /**
      * Reads and returns the contents of a profile file as plain text.
@@ -72,7 +57,7 @@ public final class ProfileHandler {
      */
     public String exportProfileContentAsText(String profileName) throws ProfileException {
         ensureProfileExists(profileName);
-        Path profilePath = Path.of(PROFILE_BASE_PATH.toString(), profileName).normalize();
+        Path profilePath = constructProfile(profileName);
 
         try {
             return Files.readString(profilePath);
@@ -95,7 +80,7 @@ public final class ProfileHandler {
     public void exportFromProfile(String profileName, String fileName) throws ProfileException{
         ensureProfileExists(profileName);
         try{
-            copyYaml(profileName, fileName, false);
+            copyYaml(profileName, fileName, ProfileDecision.FROM_PROFILE);
         }catch (IOException e){
             throw new ProfileException(
                     new ServiceError(
@@ -106,25 +91,35 @@ public final class ProfileHandler {
         }
     }
 
+    /**
+     * Imports from a yaml file to a profile. We assume the file, is in the user's base dir
+     * @param fileName The name of the file we're importing from
+     * @param profileName The name of the profile
+     * */
+    public void importToProfile(String profileName, String fileName) throws ProfileException{
+        ensureProfileExists(profileName);
+        try{
+            copyYaml(fileName, profileName, ProfileDecision.TO_PROFILE);
+        }catch (IOException e){
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("cannot import '%s' to profile", fileName),
+                            "ensure the source file exists and is readable",
+                            e)
+            );
+        }
+    }
+
 
     /**
      * Copies the content of a yaml file
      * @param sourceName The name of the source file
      * @param targetName The name of the target file
-     * @param toProfile bool value to check if we're importing to a profile or exporting
+     * @param decision an enum value to check if we're importing to a profile or exporting to a profile
      * */
-    private void copyYaml(String sourceName, String targetName, boolean toProfile) throws IOException {
-        Path source = decide(sourceName, !toProfile);
-        Path target = decide(targetName, toProfile);
-
-        if(!Files.exists(source)){
-            throw new ProfileException(
-                    new ServiceError(
-                            String.format("file '%s' not found", source.getFileName()),
-                            "check the file path and try again"
-                    )
-            );
-        }
+    private void copyYaml(String sourceName, String targetName, ProfileDecision decision) throws IOException {
+        Path source = decide(sourceName, decision.opposite()); //If we're importing to a profile or user dir, the source should be the opposite of our target
+        Path target = decide(targetName, decision);
 
         String str = Files.readString(source);
         Files.writeString(target, str, StandardOpenOption.TRUNCATE_EXISTING);
@@ -138,32 +133,31 @@ public final class ProfileHandler {
      * @throws ProfileException if the profile does not exist
      */
     public void ensureProfileExists(String profileName) throws ProfileException {
-        Path profilePath = Path.of(PROFILE_BASE_PATH.toString(), profileName).normalize();
-
+        Path profilePath = constructProfile(profileName);
         if (!Files.exists(profilePath)) {
             throw new ProfileException(
                     new ServiceError(
                             String.format("profile '%s' not found", profileName),
-                            "check the file path or run the `profile ls` command to view available profiles"
+                            new ProfileDto(profileName, findSimilarProfiles(profileName)).toString()
                     )
             );
         }
     }
 
     public boolean doesProfileExist(String profileName) throws ProfileException{
-        Path profilePath = Path.of(PROFILE_BASE_PATH.toString(), profileName).normalize();
+        Path profilePath = constructProfile(profileName);
         return Files.exists(profilePath);
     }
 
 
     /**
      *Decides if we should return a profile path or dir path
-     * @param toProfile The boolean flag that decides whether to create a profile or dir path
+     * @param decision An enum flag that decides whether to create a profile or dir path
      * @param fileName The name of the file
      * @return A representation of the path
      * */
-    private Path decide(String fileName, boolean toProfile){
-        return toProfile ? constructProfile(fileName) : constructDirPath(fileName);
+    private Path decide(String fileName, ProfileDecision decision){
+        return decision == ProfileDecision.TO_PROFILE ? constructProfile(fileName) : constructDirPath(fileName);
     }
 
 
@@ -214,7 +208,7 @@ public final class ProfileHandler {
         Path profilePath = constructProfile(profileName);
 
         try {
-            Files.deleteIfExists(profilePath);
+            Files.delete(profilePath);
         }catch (IOException e){
             throw new ProfileException(
                     new ServiceError(
@@ -236,7 +230,9 @@ public final class ProfileHandler {
         List<String> successDeletes = new ArrayList<>();
 
         try(Stream<Path> paths = Files.walk(PROFILE_BASE_PATH)){
-            paths.forEach(p -> {
+            paths.filter(Objects::nonNull)
+                    .filter(Files::isRegularFile)
+                    .forEach(p -> {
                 try {
                     Files.deleteIfExists(p);
                     successDeletes.add(p.toFile().getName());
@@ -255,21 +251,14 @@ public final class ProfileHandler {
         }
     }
 
+    /**
+     * Runs the docker content of a profile
+     * @param profileName The name of the profile to run
+     * @throws ProfileException on IOException
+     * */
     public ProfileDto runProfile(String profileName) throws ProfileException {
         ensureProfileExists(profileName);
         Path path = constructProfile(profileName);
-        try{
-            if(!Files.exists(path)){
-                return new ProfileDto(profileName, findSimilarProfiles(profileName));
-            }
-        }catch (IOException e){
-            throw new ProfileException(
-                    new ServiceError(
-                            "cannot check profile existence",
-                            "verify ~/.quickstart/profiles/ directory permissions",
-                            e)
-            );
-        }
 
         try(TempComposeFile tempComposeFile = new TempComposeFile(path)){
             tempComposeFile.runTempFile();
@@ -293,7 +282,7 @@ public final class ProfileHandler {
 
 
     //Finds profile names similar to that the user inputted
-    private Set<String> findSimilarProfiles(String profileName) throws IOException {
+    private Set<String> findSimilarProfiles(String profileName) {
         Set<String> similarProfiles = new HashSet<>();
 
         try(Stream<Path> paths = Files.walk(PROFILE_BASE_PATH)){
@@ -304,14 +293,20 @@ public final class ProfileHandler {
                             similarProfiles.add(p);
                         }
                     });
+        }catch (IOException e){
+            throw new ProfileException(new ServiceError(
+                    "cannot access profiles directory",
+                    "verify ~/.quickstart/profiles/ directory exists and is readable",
+                    e
+            ));
         }
 
         return similarProfiles;
     }
 
 
-
-    private Path constructProfile(String profileName){
+    //Constructs a profile path
+    private Path constructProfile(String profileName) throws ProfileException{
         if(profileName == null || profileName.isEmpty()){
             throw new ProfileException(
                     new ServiceError(
@@ -322,15 +317,34 @@ public final class ProfileHandler {
         }
 
         profileName = profileName + YML_EXTENSION;
-        return Paths.get(PROFILE_BASE_PATH.toString(), profileName);
+        return Path.of(PROFILE_BASE_PATH.toString(), profileName);
     }
 
+    //Constructs the dir path for a file in the user's dir
     private Path constructDirPath(String fileName){
-        return Path.of(USER_DIR.toString(), fileName);
+        Path file = Path.of(USER_DIR.toString(), fileName);
+        if(!Files.exists(file)){
+            throw new ProfileException(
+                    new ServiceError(
+                            String.format("file '%s' not found", file.getFileName()),
+                            "check the file path and try again"
+                    )
+            );
+        }
+        return file;
     }
 
     public static ProfileHandler getInstance(){
         return ProfileHandlerHolder.INSTANCE;
+    }
+
+    enum ProfileDecision {
+        TO_PROFILE,
+        FROM_PROFILE;
+
+        public ProfileDecision opposite(){
+            return this == TO_PROFILE ? FROM_PROFILE : TO_PROFILE;
+        }
     }
 
     private static class ProfileHandlerHolder{

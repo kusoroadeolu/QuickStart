@@ -1,6 +1,7 @@
 package org.quickstart.commands.profiles;
 
 import org.quickstart.commands.ProfileCommand;
+import org.quickstart.dtos.ProfileDto;
 import org.quickstart.exceptions.ProfileException;
 import org.quickstart.profiles.ProfileHandler;
 import picocli.CommandLine;
@@ -25,11 +26,13 @@ public final class ProfileUpCommand implements Runnable {
     @Override
     public void run() {
         boolean verbose = parent.verbose();
+        ProfileDto dto = null;
         try{
-            ProfileHandler.getInstance().runProfile(name);
+            dto = ProfileHandler.getInstance().runProfile(name);
             System.out.printf("started profile '%s'\n", name);
         }catch(ProfileException e){
             System.err.println(e.serviceError().toString(verbose));
+            System.out.println(dto == null ? null : dto.toString());
         }
     }
 

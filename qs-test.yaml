@@ -1,32 +1,25 @@
 version: '3.8'
 
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: test-redis
+  app:
+    image: nginx:latest
+    container_name: my_app
     ports:
-      - "6379:6379"
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: test-postgres
-    environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: testdb
-    ports:
-      - "5432:5432"
+      - "80:80"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./html:/usr/share/nginx/html
     restart: unless-stopped
 
-  nginx:
-    image: nginx:alpine
-    container_name: test-nginx
-    ports:
-      - "8080:80"
+  db:
+    image: postgres:15
+    container_name: my_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: myapp
+    volumes:
+      - db_data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  db_data:

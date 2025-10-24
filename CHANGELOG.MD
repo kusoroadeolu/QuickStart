@@ -32,3 +32,14 @@ This file contains all important changelogs for QuickStart
 #### Fixed 
 + Fixed an issue where the registry handler class didn't load before it threw an exception
 
+
+### 10/24/2025
+#### Fixed
++ Fixed an issue where profiles we're inaccessible even though they existed
+
+#### Modified
++ Made profile creation consistent across all methods
++ Introduced an enum instead of a boolean variable to keep the code readable
++ Modified `findSimilarProfiles()` to run everytime a user inputs a non-existent profile name
+
+
