@@ -7,7 +7,7 @@ public class QuickStartConstants {
     protected QuickStartConstants() {}
 
     private static final String QUICK_START_FOLDER = ".quickstart";
-    public static final String USER_HOME = System.getProperty("user.dir");
+    public static final String USER_HOME = System.getProperty("user.home");
     public static final Path BASE_PATH = Paths.get(USER_HOME, QUICK_START_FOLDER).normalize();
     public static final Path REGISTRY_PATH = Path.of(USER_HOME, QUICK_START_FOLDER, "registry.json").normalize();
     public static final Path PROFILE_BASE_PATH   = Path.of(USER_HOME, QUICK_START_FOLDER, "profile").normalize();
