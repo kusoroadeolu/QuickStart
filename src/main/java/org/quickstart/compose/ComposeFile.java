@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public final class TempComposeFile implements AutoCloseable{
+public final class ComposeFile implements AutoCloseable{
 
     private final static String BASE_COMMAND = "docker-compose";
     private final static String FILE_COMMAND = "-f";
@@ -15,17 +15,19 @@ public final class TempComposeFile implements AutoCloseable{
     private final static String DETACH_COMMAND = "-d";
     private final Path tempFilePath;
     private final String yamlContent;
+    private boolean isProfile = false;
 
-    public TempComposeFile(Path source, String tempFileName) throws IOException {
+    public ComposeFile(Path source, String tempFileName, boolean isProfile) throws IOException {
         this.yamlContent = readSource(source);
-        this.tempFilePath = createTempFile(tempFileName, yamlContent);
+        this.tempFilePath = source;
+        this.isProfile = isProfile;
     }
 
-    public TempComposeFile(Path source) throws IOException {
-        this(source, null);
+    public ComposeFile(Path source) throws IOException {
+        this(source, null, false);
     }
 
-    public TempComposeFile(String yamlContent) throws IOException {
+    public ComposeFile(String yamlContent) throws IOException {
         this.yamlContent = yamlContent;
         this.tempFilePath = createTempFile(null, yamlContent);
     }
@@ -56,7 +58,7 @@ public final class TempComposeFile implements AutoCloseable{
 
     @Override
     public void close() throws IOException {
-        if(tempFilePath != null){
+        if(tempFilePath != null && !isProfile){
             Files.deleteIfExists(tempFilePath);
         }
     }

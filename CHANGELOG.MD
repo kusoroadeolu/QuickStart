@@ -33,7 +33,7 @@ This file contains all important changelogs for QuickStart
 + Fixed an issue where the registry handler class didn't load before it threw an exception
 
 
-### 10/24/2025
+### [v1.0.1A] 10/25/2025
 #### Fixed
 + Fixed an issue where profiles we're inaccessible even though they existed
 
@@ -42,4 +42,9 @@ This file contains all important changelogs for QuickStart
 + Introduced an enum instead of a boolean variable to keep the code readable
 + Modified `findSimilarProfiles()` to run everytime a user inputs a non-existent profile name
 
+
+### [v1.0.1B] 10/26/2025
+#### Modified
++ Modified profile runs to run from the profile directory to ensure consistency when running profiles
++ Updated the installation scripts to replace the old jar files in the quickstart home path 
 

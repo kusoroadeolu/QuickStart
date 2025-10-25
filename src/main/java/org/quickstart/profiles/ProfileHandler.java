@@ -1,7 +1,7 @@
 package org.quickstart.profiles;
 
 import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.quickstart.compose.TempComposeFile;
+import org.quickstart.compose.ComposeFile;
 import org.quickstart.dtos.ProfileDeleteResult;
 import org.quickstart.dtos.ProfileDto;
 import org.quickstart.exceptions.ProfileException;
@@ -169,7 +169,7 @@ public final class ProfileHandler {
     public String listAllProfiles() {
         try (Stream<Path> paths = Files.walk(PROFILE_BASE_PATH, 1)) {
             List<String> profiles = paths
-                    .filter(p -> !p.equals(PROFILE_BASE_PATH))
+                    .filter(Files::isRegularFile)
                     .map(p -> p.getFileName().toString())
                     .sorted()
                     .toList();
@@ -183,8 +183,8 @@ public final class ProfileHandler {
 
             StringBuilder sb = new StringBuilder();
             sb.append("available profiles:\n");
-            profiles.forEach(p -> sb.append("  • ").append(p).append("\n"));
-            sb.append("\nuse `quickstart profile show <name>` to view a profile’s contents");
+            profiles.forEach(p -> sb.append("  - ").append(p).append("\n"));
+            sb.append("\nuse `quickstart profile show <name>` to view a profile's contents");
 
             return sb.toString().trim();
 
@@ -260,9 +260,9 @@ public final class ProfileHandler {
         ensureProfileExists(profileName);
         Path path = constructProfile(profileName);
 
-        try(TempComposeFile tempComposeFile = new TempComposeFile(path)){
-            tempComposeFile.runTempFile();
-            return new ProfileDto("", Collections.emptySet());
+        try(ComposeFile composeFile = new ComposeFile(path, profileName, true)){
+            composeFile.runTempFile();
+            return new ProfileDto(profileName, Collections.emptySet());
         }catch (IOException e){
             throw new ProfileException(
                     new ServiceError(

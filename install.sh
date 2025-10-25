@@ -36,6 +36,11 @@ echo "[1/4] Creating QuickStart directory..."
 mkdir -p ~/.quickstart
 
 echo "[2/4] Copying JAR file..."
+# Remove old jar if it exists
+if [ -f ~/.quickstart/quickstart.jar ]; then
+    echo "   > Removing old jar..."
+    rm -f ~/.quickstart/quickstart.jar
+fi
 cp "$JAR_PATH" ~/.quickstart/quickstart.jar
 
 echo "[3/4] Creating command wrapper..."

@@ -312,7 +312,7 @@ qs up postgres redis
 
 ## Notes
 
-- Temporary compose files are created in `~/.quickstart/tmp/` and deleted immediately after execution, if they fail to delete, they'll be deleted on the next run
+- Temporary compose files are created in `~/.quickstart/tmp/` and deleted immediately after execution, if they fail to delete, they'll be deleted on the next run. These will only be created, when using the registry to start services
 - Your Docker containers continue running after temp file deletion
 - Service names in the registry must be unique
 - Use `--force` when importing to overwrite existing services 

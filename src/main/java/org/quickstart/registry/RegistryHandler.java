@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import org.quickstart.compose.ComposeBuilder;
-import org.quickstart.compose.TempComposeFile;
+import org.quickstart.compose.ComposeFile;
 import org.quickstart.configurations.ObjectMapperConfig;
 import org.quickstart.dtos.RegistryExport;
 import org.quickstart.dtos.RegistryImport;
@@ -192,7 +192,7 @@ public final class RegistryHandler {
     public RegistryExport buildFromRegistryAndRun(Set<String> services) throws RegistryException{
         RegistryExport export = exportFromRegistryAsText(services);
 
-        try(TempComposeFile composeFile = new TempComposeFile(export.yamlString())){
+        try(ComposeFile composeFile = new ComposeFile(export.yamlString())){
             composeFile.runTempFile();
             return export;
         }catch (IOException e){
@@ -340,7 +340,7 @@ public final class RegistryHandler {
 
     public static RegistryHandler getInstance() throws RegistryException{
         if (QuickStartClassHolder.INIT_EXCEPTION != null) {
-            throw QuickStartClassHolder.INIT_EXCEPTION;  // ← Did you add this?
+            throw QuickStartClassHolder.INIT_EXCEPTION;
         }
         return QuickStartClassHolder.INSTANCE;
     }
