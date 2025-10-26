@@ -13,13 +13,16 @@ public final class ComposeFile implements AutoCloseable{
     private final static String FILE_COMMAND = "-f";
     private final static String START_COMMAND = "up";
     private final static String DETACH_COMMAND = "-d";
+    private final static String PROJECT_NAME_COMMAND = "-p";
     private final Path tempFilePath;
+    private final String tempFileName;
     private final String yamlContent;
     private boolean isProfile = false;
 
     public ComposeFile(Path source, String tempFileName, boolean isProfile) throws IOException {
         this.yamlContent = readSource(source);
         this.tempFilePath = source;
+        this.tempFileName = tempFileName;
         this.isProfile = isProfile;
     }
 
@@ -27,9 +30,10 @@ public final class ComposeFile implements AutoCloseable{
         this(source, null, false);
     }
 
-    public ComposeFile(String yamlContent) throws IOException {
+    public ComposeFile(String yamlContent, String tempFileName) throws IOException {
         this.yamlContent = yamlContent;
-        this.tempFilePath = createTempFile(null, yamlContent);
+        this.tempFileName = tempFileName;
+        this.tempFilePath = createTempFile(this.tempFileName , yamlContent);
     }
 
     private Path createTempFile(String fileName, String source) throws IOException {
@@ -52,8 +56,12 @@ public final class ComposeFile implements AutoCloseable{
             throw new IllegalStateException("temp file does not exist");
         }
 
-        String[] arr = {BASE_COMMAND, FILE_COMMAND, tempFilePath.toAbsolutePath().toString(), START_COMMAND, DETACH_COMMAND};
+
+        String[] arr = {BASE_COMMAND, PROJECT_NAME_COMMAND, tempFileName ,FILE_COMMAND, tempFilePath.toAbsolutePath().toString(), START_COMMAND, DETACH_COMMAND};
         ProcessStarter.startProcess(arr);
+
+
+
     }
 
     @Override

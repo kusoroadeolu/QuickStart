@@ -192,7 +192,7 @@ public final class RegistryHandler {
     public RegistryExport buildFromRegistryAndRun(Set<String> services) throws RegistryException{
         RegistryExport export = exportFromRegistryAsText(services);
 
-        try(ComposeFile composeFile = new ComposeFile(export.yamlString())){
+        try(ComposeFile composeFile = new ComposeFile(export.yamlString(), UUID.randomUUID().toString())){
             composeFile.runTempFile();
             return export;
         }catch (IOException e){

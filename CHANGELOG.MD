@@ -35,7 +35,7 @@ This file contains all important changelogs for QuickStart
 
 ### [v1.0.1A] 10/25/2025
 #### Fixed
-+ Fixed an issue where profiles we're inaccessible even though they existed
++ Fixed an issue where profiles were inaccessible even though they existed.
 
 #### Modified
 + Made profile creation consistent across all methods
@@ -47,4 +47,4 @@ This file contains all important changelogs for QuickStart
 #### Modified
 + Modified profile runs to run from the profile directory to ensure consistency when running profiles
 + Updated the installation scripts to replace the old jar files in the quickstart home path 
-
++ Modified the docker command to use the name of the profile as the project/container name
